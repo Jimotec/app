@@ -1,11 +1,11 @@
-import os
 import json
+import os
 import streamlit as st
 
 # Konfigurera sidan
 st.set_page_config(page_title="Jimotec AB", layout="wide")
 
-# Dölj den automatiska sidolistan i sidopanelen
+# Döljer automatiska listan med sidor i sidopanelen helt
 st.markdown(
     """
     <style>
@@ -17,6 +17,7 @@ st.markdown(
 
 FILNAMN = "users.json"
 
+
 # Ladda användare från fil (standardlösenord satt till 12)
 def ladda_anvandare():
     if os.path.exists(FILNAMN):
@@ -27,75 +28,91 @@ def ladda_anvandare():
             return {"admin": "12"}
     return {"admin": "12"}
 
+
 anvandare_dict = ladda_anvandare()
-
-# --- INLOGGNINGSHANTERING ---
-if "inloggad" not in st.session_state:
-    st.session_state["inloggad"] = False
-if "anvandare" not in st.session_state:
-    st.session_state["anvandare"] = ""
-
-def logga_in():
-    st.title("Inloggning - Jimotec AB")
-    meddelande = st.empty()
-    
-    meddelande.info("Mata in användarnamn och lösenord för att fortsätta.")
-    
-    anvandarnamn = st.text_input("Användarnamn", key="login_user")
-    losenord = st.text_input("Lösenord", type="password", key="login_pass")
-    
-    if st.button("Logga in", use_container_width=True):
-        if anvandarnamn in anvandare_dict and anvandare_dict[anvandarnamn] == losenord:
-            st.session_state["inloggad"] = True
-            st.session_state["anvandare"] = anvandarnamn
-            st.rerun()
-        else:
-            meddelande.error("Felaktigt användarnamn eller lösenord.")
-
-# Om inte inloggad, visa endast inloggningsskärmen
-if not st.session_state["inloggad"]:
-    logga_in()
-    st.stop()
-
-# --- SIDOPANEL & MENYER (VISAS ENDAST NÄR MAN ÄR INLOGGAD) ---
 
 # Hitta rätt filnamn oavsett stora/små bokstäver för loggan
 logo_file = None
-for f in os.listdir("."):
-    if f.lower() in ["jimotec.jpg", "jimotec.png", "jimotec.jpeg"]:
+for f in [
+    "jimotec.jpg",
+    "Jimotec.jpg",
+    "jimotec.JPG",
+    "Jimotec.JPG",
+    "jimotec.png",
+    "Jimotec.png",
+]:
+    if os.path.exists(f):
         logo_file = f
         break
 
-if logo_file:
-    st.sidebar.image(logo_file, use_container_width=True)
+# Inloggningslogik
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
-st.sidebar.write(f"Inloggad som: **{st.session_state['anvandare']}**")
-if st.sidebar.button("Logga ut"):
-    st.session_state["inloggad"] = False
-    st.session_state["anvandare"] = ""
-    st.rerun()
+if not st.session_state.logged_in:
+    # Visa loggan om den hittades
+    if logo_file:
+        st.image(logo_file, width=200)
 
-st.sidebar.divider()
+    st.title("🔒 Inloggning - Jimotec AB")
+    input_namn = st.text_input("Namn")
+    input_losenord = st.text_input("Lösenord", type="password")
 
-# Hjälpfunktion för att bara länka om filen faktiskt finns på GitHub
-def skapa_säker_länk(sökväg, etikett, ikon=None):
-    if os.path.exists(sökväg):
-        st.sidebar.page_link(sökväg, label=etikett, icon=ikon)
+    if st.button("Logga in"):
+        if (
+            input_namn in anvandare_dict
+            and anvandare_dict[input_namn] == input_losenord
+        ):
+            st.session_state.logged_in = True
+            st.session_state.anvandarnamn = input_namn
+            st.rerun()
+        else:
+            st.error("❌ Fel namn eller lösenord. Försök igen.")
+else:
+    # Loggan i sidopanelen när man är inloggad
+    if logo_file:
+        st.sidebar.image(logo_file, width=150)
 
-# 1. HUVUDMENY: STARTSIDA
-skapa_säker_länk("app.py", "Startsida", "🏠")
+    st.sidebar.title("Meny")
 
-st.sidebar.divider()
+    # Hjälpfunktion för att länka säkert utan att appen kraschar om en fil saknas
+    def sakert_link(sökväg, etikett):
+        if os.path.exists(sökväg):
+            st.page_link(sökväg, label=etikett)
 
-# 2. HUVUDMENY: KUND & RITNINGAR
-st.sidebar.markdown("### 📋 Kund & Produktion")
-skapa_säker_länk("pages/1_kund.py", "Kundregister", "👤")
-skapa_säker_länk("pages/2_ritningar.py", "Ritningshantering", "📐")
+    # Huvudlänk för startsidan
+    sakert_link("app.py", "Startsida")
 
-# 3. HUVUDMENY: EKONOMI & PLANERING
-st.sidebar.markdown("### 📊 Ekonomi & Styrning")
-skapa_säker_länk("pages/3_affarsplan_ekonomi.py", "Affärsplan & Ekonomi", "📈")
+    # 1. Admin-meny
+    with st.sidebar.expander("Admin", expanded=False):
+        sakert_link("pages/1_start_admin.py", "Admin Start")
+        sakert_link("pages/2_sida_password.py", "Hantera lösenord")
 
-# --- INNEHÅLL PÅ STARTSIDAN ---
-st.title("Välkommen till Jimotec AB")
-st.write("Du är nu inloggad. Välj en meny i sidopanelen till vänster för att navigera i systemet.")
+    # 2. Jimotec-meny
+    with st.sidebar.expander("Jimotec", expanded=False):
+        sakert_link("pages/4_jimotec_miro.py", "Miro-analys")
+
+    # 3. Vision-meny
+    with st.sidebar.expander("Vision", expanded=False):
+        sakert_link("pages/5_jimotec_ai.py", "AI")
+
+    # 4. Affärsplan-meny
+    with st.sidebar.expander("Affärsplan", expanded=False):
+        sakert_link("pages/3_affarsplan_sammanfattning.py", "1. Sammanfattning")
+        sakert_link("pages/3_affarsplan_ide.py", "2. Affärsidé och vision")
+        sakert_link("pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning")
+        sakert_link("pages/3_affarsplan_marknad.py", "4. Marknad och bransch")
+        sakert_link("pages/3_affarsplan_forsaljning.py", "5. Marknadsföring och försäljning")
+        sakert_link("pages/3_affarsplan_organisation.py", "6. Organisation och personal")
+        sakert_link("pages/3_affarsplan_produkter.py", "7. Produkter eller tjänster")
+        sakert_link("pages/3_affarsplan_ekonomi.py", "8. Ekonomisk plan")
+
+    st.sidebar.divider()
+    if st.sidebar.button("Logga ut"):
+        st.session_state.logged_in = False
+        st.rerun()
+
+    st.title("Jimotec AB – Startsida")
+    st.success(
+        f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu inloggad."
+    )

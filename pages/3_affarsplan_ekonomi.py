@@ -14,7 +14,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Sök och visa loggan i sidopanelen (kollar i både mappen och överliggande mapp)
+# Sök och visa loggan i sidopanelen
 logo_sökvägar = [
     "Jimotec.jpg",
     "jimotec.jpg",
@@ -24,8 +24,6 @@ logo_sökvägar = [
     "jimotec.png",
     "../Jimotec.jpg",
     "../jimotec.jpg",
-    "../Jimotec.png",
-    "../jimotec.png",
 ]
 
 for path in logo_sökvägar:
@@ -34,28 +32,22 @@ for path in logo_sökvägar:
         st.sidebar.divider()
         break
 
-# Länk tillbaka till Startsidan i sidopanelen
+# Länk tillbaka till Startsidan
 if os.path.exists("app.py"):
     st.sidebar.page_link("app.py", label="Startsida", icon="🏠")
 elif os.path.exists("../app.py"):
     st.sidebar.page_link("../app.py", label="Startsida", icon="🏠")
 
-# --- HUVUDINNEHÅLL ---
-st.title("Ekonomisk plan")
+# --- INBÄDDAT GOOGLE DOCS-DOKUMENT ---
+doc_url = "https://docs.google.com/document/d/1Mw5XxUYOlcBO7DxZyUXVNYxTcPB4M63oEmpcBtLKGjI/preview"
 
-st.write("Detta är grundläggande anteckningar för Jimotec AB och den ekonomiska planen.")
-st.markdown(
-    """
-- **Affärsområde:** CNC-bearbetning och tillverkning av mekaniska komponenter.
-- **System och verktyg:** Monitor ERP, n8n, Streamlit.
-"""
-)
+st.components.v1.iframe(doc_url, height=800, scrolling=True)
 
 st.divider()
 
-# Grön knapp för Google Docs
+# Knapp för att öppna i ny flik om man vill redigera
 st.link_button(
     "Öppna och redigera i Google Docs",
-    "https://docs.google.com",  # Byt ut mot din länk till dokumentet
+    "https://docs.google.com/document/d/1Mw5XxUYOlcBO7DxZyUXVNYxTcPB4M63oEmpcBtLKGjI/edit",
     type="primary",
 )

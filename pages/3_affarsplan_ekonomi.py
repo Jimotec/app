@@ -38,14 +38,14 @@ if os.path.exists("app.py"):
 elif os.path.exists("../app.py"):
     st.sidebar.page_link("../app.py", label="Startsida", icon="🏠")
 
-# --- INBÄDDAT GOOGLE DOCS-DOKUMENT ---
+# --- INBÄDDAT GOOGLE DOCS-DOKUMENT (ekonomi_affarsplan) ---
 doc_url = "https://docs.google.com/document/d/1Mw5XxUYOlcBO7DxZyUXVNYxTcPB4M63oEmpcBtLKGjI/preview"
 
 st.components.v1.iframe(doc_url, height=800, scrolling=True)
 
 st.divider()
 
-# Knapp för att öppna i ny flik om man vill redigera
+# Knapp för att öppna och redigera dokumentet i ny flik
 st.link_button(
     "Öppna och redigera i Google Docs",
     "https://docs.google.com/document/d/1Mw5XxUYOlcBO7DxZyUXVNYxTcPB4M63oEmpcBtLKGjI/edit",

@@ -17,6 +17,7 @@ st.markdown(
 
 FILNAMN = "users.json"
 
+
 def ladda_anvandare():
     if os.path.exists(FILNAMN):
         try:
@@ -26,19 +27,26 @@ def ladda_anvandare():
             return {"admin": "12"}
     return {"admin": "12"}
 
+
 anvandare_dict = ladda_anvandare()
 
-# Funktion för att söka och visa loggan snyggt
+
 def henta_logo_path():
     sökvägar = [
-        "Jimotec.jpg", "jimotec.jpg", "Jimotec.JPG", "jimotec.JPG",
-        "Jimotec.png", "jimotec.png",
-        "../Jimotec.jpg", "../jimotec.jpg"
+        "Jimotec.jpg",
+        "jimotec.jpg",
+        "Jimotec.JPG",
+        "jimotec.JPG",
+        "Jimotec.png",
+        "jimotec.png",
+        "../Jimotec.jpg",
+        "../jimotec.jpg",
     ]
     for path in sökvägar:
         if os.path.exists(path):
             return path
     return None
+
 
 logo_path = henta_logo_path()
 
@@ -50,12 +58,15 @@ if not st.session_state.logged_in:
     if logo_path:
         st.image(logo_path, width=220)
 
-    st.title("🔒 Inloggning - Jimotec AB")
+    st.title("🔒 Inloggning")
     input_namn = st.text_input("Namn")
     input_losenord = st.text_input("Lösenord", type="password")
 
     if st.button("Logga in"):
-        if input_namn in anvandare_dict and anvandare_dict[input_namn] == input_losenord:
+        if (
+            input_namn in anvandare_dict
+            and anvandare_dict[input_namn] == input_losenord
+        ):
             st.session_state.logged_in = True
             st.session_state.anvandarnamn = input_namn
             st.rerun()
@@ -94,9 +105,16 @@ else:
         sakert_link("pages/3_affarsplan_ide.py", "2. Affärsidé och vision")
         sakert_link("pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning")
         sakert_link("pages/3_affarsplan_marknad.py", "4. Marknad och bransch")
-        sakert_link("pages/3_affarsplan_forsaljning.py", "5. Marknadsföring och försäljning")
-        sakert_link("pages/3_affarsplan_organisation.py", "6. Organisation och personal")
-        sakert_link("pages/3_affarsplan_produkter.py", "7. Produkter eller tjänster")
+        sakert_link(
+            "pages/3_affarsplan_forsaljning.py",
+            "5. Marknadsföring och försäljning",
+        )
+        sakert_link(
+            "pages/3_affarsplan_organisation.py", "6. Organisation och personal"
+        )
+        sakert_link(
+            "pages/3_affarsplan_produkter.py", "7. Produkter eller tjänster"
+        )
         sakert_link("pages/3_affarsplan_ekonomi.py", "8. Ekonomisk plan")
 
     st.sidebar.divider()
@@ -106,5 +124,6 @@ else:
 
     st.title("Jimotec AB – Startsida")
     st.success(
-        f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu inloggad."
+        f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu"
+        " inloggad."
     )

@@ -38,16 +38,16 @@ if os.path.exists("app.py"):
 elif os.path.exists("../app.py"):
     st.sidebar.page_link("../app.py", label="Startsida", icon="🏠")
 
-# --- INBÄDDAT GOOGLE DOCS-DOKUMENT (ekonomi_affarsplan) ---
-doc_url = "https://docs.google.com/document/d/1Mw5XxUYOlcBO7DxZyUXVNYxTcPB4M63oEmpcBtLKGjI/preview"
+# --- INBÄDDAT GOOGLE DOCS-DOKUMENT ---
+doc_url = "https://docs.google.com/document/d/1C5IMmkljkaDNaqD72WJ-VFCwaGKCcu7P/preview"
 
 st.components.v1.iframe(doc_url, height=800, scrolling=True)
 
 st.divider()
 
-# Knapp för att öppna och redigera dokumentet i ny flik
+# Knapp för att öppna och redigera i ny flik
 st.link_button(
     "Öppna och redigera i Google Docs",
-    "https://docs.google.com/document/d/1Mw5XxUYOlcBO7DxZyUXVNYxTcPB4M63oEmpcBtLKGjI/edit",
+    "https://docs.google.com/document/d/1C5IMmkljkaDNaqD72WJ-VFCwaGKCcu7P/edit",
     type="primary",
 )

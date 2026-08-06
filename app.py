@@ -17,8 +17,6 @@ st.markdown(
 
 FILNAMN = "users.json"
 
-
-# Ladda användare från fil (standardlösenord satt till 12)
 def ladda_anvandare():
     if os.path.exists(FILNAMN):
         try:
@@ -28,59 +26,53 @@ def ladda_anvandare():
             return {"admin": "12"}
     return {"admin": "12"}
 
-
 anvandare_dict = ladda_anvandare()
 
-# Hitta rätt filnamn oavsett stora/små bokstäver för loggan
-logo_file = None
-for f in [
-    "jimotec.jpg",
-    "Jimotec.jpg",
-    "jimotec.JPG",
-    "Jimotec.JPG",
-    "jimotec.png",
-    "Jimotec.png",
-]:
-    if os.path.exists(f):
-        logo_file = f
-        break
+# Funktion för att söka och visa loggan snyggt
+def henta_logo_path():
+    sökvägar = [
+        "Jimotec.jpg", "jimotec.jpg", "Jimotec.JPG", "jimotec.JPG",
+        "Jimotec.png", "jimotec.png",
+        "../Jimotec.jpg", "../jimotec.jpg"
+    ]
+    for path in sökvägar:
+        if os.path.exists(path):
+            return path
+    return None
+
+logo_path = henta_logo_path()
 
 # Inloggningslogik
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
-    # Visa loggan om den hittades
-    if logo_file:
-        st.image(logo_file, width=200)
+    if logo_path:
+        st.image(logo_path, width=220)
 
     st.title("🔒 Inloggning - Jimotec AB")
     input_namn = st.text_input("Namn")
     input_losenord = st.text_input("Lösenord", type="password")
 
     if st.button("Logga in"):
-        if (
-            input_namn in anvandare_dict
-            and anvandare_dict[input_namn] == input_losenord
-        ):
+        if input_namn in anvandare_dict and anvandare_dict[input_namn] == input_losenord:
             st.session_state.logged_in = True
             st.session_state.anvandarnamn = input_namn
             st.rerun()
         else:
             st.error("❌ Fel namn eller lösenord. Försök igen.")
 else:
-    # Loggan i sidopanelen när man är inloggad
-    if logo_file:
-        st.sidebar.image(logo_file, width=150)
+    # Loggan överst i sidopanelen
+    if logo_path:
+        st.sidebar.image(logo_path, use_container_width=True)
+        st.sidebar.divider()
 
     st.sidebar.title("Meny")
 
-    # Hjälpfunktion för att länka säkert utan att appen kraschar om en fil saknas
     def sakert_link(sökväg, etikett):
         if os.path.exists(sökväg):
             st.page_link(sökväg, label=etikett)
 
-    # Huvudlänk för startsidan
     sakert_link("app.py", "Startsida")
 
     # 1. Admin-meny

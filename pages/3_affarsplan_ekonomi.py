@@ -4,7 +4,7 @@ import streamlit as st
 # Konfigurera sidan
 st.set_page_config(page_title="Ekonomisk plan - Jimotec AB", layout="wide")
 
-# Dölj standardmenyn i sidopanelen
+# Dölj standardmenyn i sidopanelen och anpassa källkodens stil
 st.markdown(
     """
     <style>
@@ -39,16 +39,17 @@ elif os.path.exists("../app.py"):
     st.sidebar.page_link("../app.py", label="Startsida", icon="🏠")
 
 # --- HUVUDINNEHÅLL ---
-st.title("Ekonomisk plan")
 
-# Redigera-knapp överst
-st.link_button(
-    "✏️ Redigera dokumentet i Google Docs",
-    "https://docs.google.com/document/d/1C5lMmkIjkaDNaqD72WJ-VFCwaGKCcu7P/edit",
-    type="primary",
-)
+# Liten knapp längst till vänster i marginalen (använder kolumner för kompakt storlek)
+col1, _ = st.columns([2, 10])
 
-st.divider()
+with col1:
+    st.link_button(
+        "✏️ Redigera i Google Docs",
+        "https://docs.google.com/document/d/1C5lMmkIjkaDNaqD72WJ-VFCwaGKCcu7P/edit",
+    )
+
+st.write("")  # Lite avstånd innan dokumentet
 
 # --- INBÄDDAT GOOGLE DOCS-DOKUMENT ---
 doc_url = "https://docs.google.com/document/d/1C5lMmkIjkaDNaqD72WJ-VFCwaGKCcu7P/preview"

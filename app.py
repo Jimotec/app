@@ -122,8 +122,7 @@ else:
         st.session_state.logged_in = False
         st.rerun()
 
-    # Huvudrubrik för Startsidan
-    st.title("Startsida")
+    # Innehåll på Startsidan utan extra st.title
     st.success(
         f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu"
         " inloggad."

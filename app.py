@@ -122,7 +122,8 @@ else:
         st.session_state.logged_in = False
         st.rerun()
 
-    st.title("Jimotec AB – Startsida")
+    # Huvudrubrik för Startsidan
+    st.title("Startsida")
     st.success(
         f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu"
         " inloggad."

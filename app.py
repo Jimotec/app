@@ -80,39 +80,43 @@ else:
 
     st.sidebar.title("Meny")
 
-    # Använd st.page_link direkt för att säkerställa att länkarna alltid visas
-    st.sidebar.page_link("app.py", label="Startsida")
+    # Funktion för att länka säkert utan att krascha appen om en fil saknas
+    def sakert_link(sökväg, etikett):
+        if os.path.exists(sökväg):
+            st.sidebar.page_link(sökväg, label=etikett)
+
+    sakert_link("app.py", "Startsida")
 
     # 1. Admin-meny
     with st.sidebar.expander("Admin", expanded=False):
-        st.page_link("pages/1_start_admin.py", label="Admin Start")
-        st.page_link("pages/2_sida_password.py", label="Hantera lösenord")
+        sakert_link("pages/1_start_admin.py", "Admin Start")
+        sakert_link("pages/2_sida_password.py", "Hantera lösenord")
 
     # 2. Jimotec-meny
     with st.sidebar.expander("Jimotec", expanded=False):
-        st.page_link("pages/4_jimotec_miro.py", label="Miro-analys")
+        sakert_link("pages/4_jimotec_miro.py", "Miro-analys")
 
     # 3. Jimotec med AI-meny
     with st.sidebar.expander("Jimotec med AI", expanded=True):
-        st.page_link("pages/6_motesprotokoll.py", label="Mötesprotokoll")
+        sakert_link("pages/6_motesprotokoll.py", "Mötesprotokoll")
 
     # 4. Vision-meny
     with st.sidebar.expander("Vision", expanded=False):
-        st.page_link("pages/4_vision.py", label="Vision & AI")
-        st.page_link("pages/5_jimotec_ai.py", label="AI")
+        sakert_link("pages/4_vision.py", "Vision & AI")
+        sakert_link("pages/5_jimotec_ai.py", "AI")
 
     # 5. Affärsplan-meny
     with st.sidebar.expander("Affärsplan", expanded=False):
-        st.page_link("pages/3_affarsplan_sammanfattning.py", label="1. Sammanfattning")
-        st.page_link("pages/3_affarsplan_ide.py", label="2. Affärsidé och vision")
-        st.page_link("pages/3_affarsplan_foretag.py", label="3. Företagsbeskrivning")
-        st.page_link("pages/3_affarsplan_produkter.py", label="4. Produkter eller tjänster")
-        st.page_link("pages/3_affarsplan_marknad.py", label="5. Marknad och bransch")
-        st.page_link("pages/3_affarsplan_forsaljning.py", label="6. Marknadsföring och försäljning")
-        st.page_link("pages/3_affarsplan_organisation.py", label="7. Organisation och personal")
-        st.page_link("pages/3_affarsplan_riskanalys.py", label="8. Riskanalys och hantering")
-        st.page_link("pages/3_affarsplan_genomforandeplan.py", label="9. Genomförandeplan")
-        st.page_link("pages/3_affarsplan_ekonomi.py", label="10. Ekonomisk plan")
+        sakert_link("pages/3_affarsplan_sammanfattning.py", "1. Sammanfattning")
+        sakert_link("pages/3_affarsplan_ide.py", "2. Affärsidé och vision")
+        sakert_link("pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning")
+        sakert_link("pages/3_affarsplan_produkter.py", "4. Produkter eller tjänster")
+        sakert_link("pages/3_affarsplan_marknad.py", "5. Marknad och bransch")
+        sakert_link("pages/3_affarsplan_forsaljning.py", "6. Marknadsföring och försäljning")
+        sakert_link("pages/3_affarsplan_organisation.py", "7. Organisation och personal")
+        sakert_link("pages/3_affarsplan_riskanalys.py", "8. Riskanalys och hantering")
+        sakert_link("pages/3_affarsplan_genomforandeplan.py", "9. Genomförandeplan")
+        sakert_link("pages/3_affarsplan_ekonomi.py", "10. Ekonomisk plan")
 
     st.sidebar.divider()
     if st.sidebar.button("Logga ut"):

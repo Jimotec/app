@@ -80,43 +80,44 @@ else:
 
     st.sidebar.title("Meny")
 
-    # Funktion för att länka säkert utan att krascha appen om en fil saknas
-    def sakert_link(sökväg, etikett):
-        if os.path.exists(sökväg):
-            st.sidebar.page_link(sökväg, label=etikett)
+    # Hjälpfunktion för att länka säkert till sidor i mappen 'pages'
+    def visa_lank(sökväg, etikett):
+        # Kontrollerar om filen finns antingen direkt eller via relativ sökväg
+        if os.path.exists(sökväg) or os.path.exists(os.path.basename(sökväg)):
+            st.page_link(sökväg, label=etikett)
 
-    sakert_link("app.py", "Startsida")
+    visa_lank("app.py", "Startsida")
 
     # 1. Admin-meny
     with st.sidebar.expander("Admin", expanded=False):
-        sakert_link("pages/1_start_admin.py", "Admin Start")
-        sakert_link("pages/2_sida_password.py", "Hantera lösenord")
+        visa_lank("pages/1_start_admin.py", "Admin Start")
+        visa_lank("pages/2_sida_password.py", "Hantera lösenord")
 
     # 2. Jimotec-meny
     with st.sidebar.expander("Jimotec", expanded=False):
-        sakert_link("pages/4_jimotec_miro.py", "Miro-analys")
+        visa_lank("pages/4_jimotec_miro.py", "Miro-analys")
 
-    # 3. Jimotec med AI-meny
-    with st.sidebar.expander("Jimotec med AI", expanded=True):
-        sakert_link("pages/6_motesprotokoll.py", "Mötesprotokoll")
+    # 3. Jimotec med AI-meny (Stängd från start)
+    with st.sidebar.expander("Jimotec med AI", expanded=False):
+        visa_lank("pages/6_motesprotokoll.py", "Mötesprotokoll")
 
     # 4. Vision-meny
     with st.sidebar.expander("Vision", expanded=False):
-        sakert_link("pages/4_vision.py", "Vision & AI")
-        sakert_link("pages/5_jimotec_ai.py", "AI")
+        visa_lank("pages/4_vision.py", "Vision & AI")
+        visa_lank("pages/5_jimotec_ai.py", "AI")
 
     # 5. Affärsplan-meny
     with st.sidebar.expander("Affärsplan", expanded=False):
-        sakert_link("pages/3_affarsplan_sammanfattning.py", "1. Sammanfattning")
-        sakert_link("pages/3_affarsplan_ide.py", "2. Affärsidé och vision")
-        sakert_link("pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning")
-        sakert_link("pages/3_affarsplan_produkter.py", "4. Produkter eller tjänster")
-        sakert_link("pages/3_affarsplan_marknad.py", "5. Marknad och bransch")
-        sakert_link("pages/3_affarsplan_forsaljning.py", "6. Marknadsföring och försäljning")
-        sakert_link("pages/3_affarsplan_organisation.py", "7. Organisation och personal")
-        sakert_link("pages/3_affarsplan_riskanalys.py", "8. Riskanalys och hantering")
-        sakert_link("pages/3_affarsplan_genomforandeplan.py", "9. Genomförandeplan")
-        sakert_link("pages/3_affarsplan_ekonomi.py", "10. Ekonomisk plan")
+        visa_lank("pages/3_affarsplan_sammanfattning.py", "1. Sammanfattning")
+        visa_lank("pages/3_affarsplan_ide.py", "2. Affärsidé och vision")
+        visa_lank("pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning")
+        visa_lank("pages/3_affarsplan_produkter.py", "4. Produkter eller tjänster")
+        visa_lank("pages/3_affarsplan_marknad.py", "5. Marknad och bransch")
+        visa_lank("pages/3_affarsplan_forsaljning.py", "6. Marknadsföring och försäljning")
+        visa_lank("pages/3_affarsplan_organisation.py", "7. Organisation och personal")
+        visa_lank("pages/3_affarsplan_riskanalys.py", "8. Riskanalys och hantering")
+        visa_lank("pages/3_affarsplan_genomforandeplan.py", "9. Genomförandeplan")
+        visa_lank("pages/3_affarsplan_ekonomi.py", "10. Ekonomisk plan")
 
     st.sidebar.divider()
     if st.sidebar.button("Logga ut"):

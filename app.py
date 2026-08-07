@@ -95,8 +95,9 @@ else:
     with st.sidebar.expander("Jimotec", expanded=False):
         sakert_link("pages/4_jimotec_miro.py", "Miro-analys")
 
-    # 3. Vision-meny
+    # 3. Vision-meny (Uppdaterad med den nya vision-filen)
     with st.sidebar.expander("Vision", expanded=False):
+        sakert_link("pages/4_vision.py", "Vision & AI")
         sakert_link("pages/5_jimotec_ai.py", "AI")
 
     # 4. Affärsplan-meny
@@ -128,7 +129,7 @@ else:
         st.session_state.logged_in = False
         st.rerun()
 
-    # Innehåll på Startsidan utan extra st.title
+    # Innehåll på Startsidan
     st.success(
         f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu"
         " inloggad."

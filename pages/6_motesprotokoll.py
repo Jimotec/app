@@ -1,11 +1,12 @@
-import json
 import os
+import tempfile
 import streamlit as st
+import markdown
+from weasyprint import HTML, CSS
 
-# Konfigurera sidan
-st.set_page_config(page_title="Jimotec AB", layout="wide")
+st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# Döljer automatiska listan med sidor i sidopanelen helt
+# Döljer automatiska listan i sidopanelen
 st.markdown(
     """
     <style>
@@ -15,126 +16,185 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-FILNAMN = "users.json"
+# Sidopanel för navigering
+st.sidebar.title("Meny")
+if os.path.exists("app.py"):
+    st.sidebar.page_link("app.py", label="👈 Tillbaka till Startsida")
 
+st.title("📋 Skapa Mötesprotokoll")
+st.write("Klistra in strukturerad text från chatten, ladda upp bilder och generera din PDF.")
 
-def ladda_anvandare():
-    if os.path.exists(FILNAMN):
-        try:
-            with open(FILNAMN, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return {"admin": "12"}
-    return {"admin": "12"}
+# --- SEKTION 1: SESSION STATE FOR BILDER ---
+if "uploaded_images" not in st.session_state:
+    st.session_state.uploaded_images = []
 
+# --- SEKTION 2: TEXTINPUT ---
+st.subheader("1. Protokolltext (Markdown)")
+markdown_text = st.text_area(
+    "Klistra in din text här:",
+    height=250,
+    placeholder="""# Mötesprotokoll - Projekt X
 
-anvandare_dict = ladda_anvandare()
+## Identifierade punkter
+* **Punkt 1:** Genomgång av stativ genomförd utan anmärkning.
+* **Punkt 2:** Skada på vänster hörn vid leverans.
+  ![Skada hörn](bild1.jpg)
+* **Punkt 3:** Ny logotyp monterad i nederkant.
+  ![Ny logotyp](bild2.jpg)
+""",
+)
 
+st.divider()
 
-def henta_logo_path():
-    sökvägar = [
-        "Jimotec.jpg",
-        "jimotec.jpg",
-        "Jimotec.JPG",
-        "jimotec.JPG",
-        "Jimotec.png",
-        "jimotec.png",
-        "../Jimotec.jpg",
-        "../jimotec.jpg",
-    ]
-    for path in sökvägar:
-        if os.path.exists(path):
-            return path
-    return None
+# --- SEKTION 3: BILDHANTERING & SORTERING ---
+st.subheader("2. Bilder")
 
+ny_filer = st.file_uploader(
+    "Ladda upp bilder till protokollet:",
+    type=["jpg", "jpeg", "png"],
+    accept_multiple_files=True,
+)
 
-logo_path = henta_logo_path()
+if ny_filer:
+    befintliga_namn = [img["file"].name for img in st.session_state.uploaded_images]
+    for f in ny_filer:
+        if f.name not in befintliga_namn:
+            st.session_state.uploaded_images.append({"file": f, "order": len(st.session_state.uploaded_images) + 1})
 
-# Inloggningslogik
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+if st.session_state.uploaded_images:
+    st.write("**Sortera och granska bilder:**")
+    st.caption("Ändra numret i rutan om du vill ändra bildernas ordning/referensnamn.")
 
-if not st.session_state.logged_in:
-    if logo_path:
-        st.image(logo_path, width=220)
+    for index, img_obj in enumerate(st.session_state.uploaded_images):
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col1:
+            st.image(img_obj["file"], width=150)
+            
+        with col2:
+            st.write(f"**Originalfil:** {img_obj['file'].name}")
+            st.info(f"Använd i texten som: `![Beskrivning](bild{img_obj['order']}.jpg)`")
+            
+        with col3:
+            ny_ordning = st.number_input(
+                "Bildnummer (ID):",
+                min_value=1,
+                max_value=99,
+                value=img_obj["order"],
+                key=f"order_{index}_{img_obj['file'].name}",
+            )
+            img_obj["order"] = ny_ordning
 
-    st.title("🔒 Inloggning")
-    input_namn = st.text_input("Namn")
-    input_losenord = st.text_input("Lösenord", type="password")
+    st.session_state.uploaded_images.sort(key=lambda x: x["order"])
 
-    if st.button("Logga in"):
-        if (
-            input_namn in anvandare_dict
-            and anvandare_dict[input_namn] == input_losenord
-        ):
-            st.session_state.logged_in = True
-            st.session_state.anvandarnamn = input_namn
-            st.rerun()
-        else:
-            st.error("❌ Fel namn eller lösenord. Försök igen.")
-else:
-    # Loggan överst i sidopanelen
-    if logo_path:
-        st.sidebar.image(logo_path, use_container_width=True)
-        st.sidebar.divider()
-
-    st.sidebar.title("Meny")
-
-    def sakert_link(sökväg, etikett):
-        if os.path.exists(sökväg):
-            st.page_link(sökväg, label=etikett)
-
-    sakert_link("app.py", "Startsida")
-
-    # 1. Admin-meny
-    with st.sidebar.expander("Admin", expanded=False):
-        sakert_link("pages/1_start_admin.py", "Admin Start")
-        sakert_link("pages/2_sida_password.py", "Hantera lösenord")
-
-    # 2. Jimotec-meny
-    with st.sidebar.expander("Jimotec", expanded=False):
-        sakert_link("pages/4_jimotec_miro.py", "Miro-analys")
-
-    # 3. Jimotec med AI-meny (Ny sektion)
-    with st.sidebar.expander("Jimotec med AI", expanded=True):
-        sakert_link("pages/6_motesprotokoll.py", "Mötesprotokoll")
-
-    # 4. Vision-meny
-    with st.sidebar.expander("Vision", expanded=False):
-        sakert_link("pages/4_vision.py", "Vision & AI")
-        sakert_link("pages/5_jimotec_ai.py", "AI")
-
-    # 5. Affärsplan-meny
-    with st.sidebar.expander("Affärsplan", expanded=False):
-        sakert_link("pages/3_affarsplan_sammanfattning.py", "1. Sammanfattning")
-        sakert_link("pages/3_affarsplan_ide.py", "2. Affärsidé och vision")
-        sakert_link("pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning")
-        sakert_link(
-            "pages/3_affarsplan_produkter.py", "4. Produkter eller tjänster"
-        )
-        sakert_link("pages/3_affarsplan_marknad.py", "5. Marknad och bransch")
-        sakert_link(
-            "pages/3_affarsplan_forsaljning.py",
-            "6. Marknadsföring och försäljning",
-        )
-        sakert_link(
-            "pages/3_affarsplan_organisation.py", "7. Organisation och personal"
-        )
-        sakert_link(
-            "pages/3_affarsplan_riskanalys.py", "8. Riskanalys och hantering"
-        )
-        sakert_link(
-            "pages/3_affarsplan_genomforandeplan.py", "9. Genomförandeplan"
-        )
-        sakert_link("pages/3_affarsplan_ekonomi.py", "10. Ekonomisk plan")
-
-    st.sidebar.divider()
-    if st.sidebar.button("Logga ut"):
-        st.session_state.logged_in = False
+    if st.button("❌ Rensa alla bilder"):
+        st.session_state.uploaded_images = []
         st.rerun()
 
-    # Innehåll på Startsidan
-    st.success(
-        f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu"
-        " inloggad."
-    )
+st.divider()
+
+# --- SEKTION 4: GENERERA PDF ---
+st.subheader("3. Skapa PDF")
+
+def generera_pdf(md_text, bild_lista):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        for img in bild_lista:
+            ext = os.path.splitext(img["file"].name)[1]
+            if not ext:
+                ext = ".jpg"
+            
+            alias_path = os.path.join(temp_dir, f"bild{img['order']}{ext}")
+            orig_path = os.path.join(temp_dir, img["file"].name)
+            
+            bytes_data = img["file"].getvalue()
+            with open(alias_path, "wb") as f:
+                f.write(bytes_data)
+            with open(orig_path, "wb") as f:
+                f.write(bytes_data)
+
+        html_innehall = markdown.markdown(
+            md_text, extensions=["tables", "fenced_code", "nl2br"]
+        )
+
+        css_stil = """
+        @page {
+            size: A4;
+            margin: 20mm 15mm 20mm 15mm;
+            @bottom-right {
+                content: "Sida " counter(page) " av " counter(pages);
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                color: #666;
+            }
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.5;
+            color: #222;
+        }
+        h1 {
+            color: #1a365d;
+            border-bottom: 2px solid #1a365d;
+            padding-bottom: 5px;
+            font-size: 18pt;
+        }
+        h2 {
+            color: #2b6cb0;
+            font-size: 14pt;
+            margin-top: 20px;
+            border-left: 4px solid #2b6cb0;
+            padding-left: 8px;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        img {
+            max-width: 100%;
+            max-height: 110mm;
+            height: auto;
+            display: block;
+            margin: 12px 0;
+            border-radius: 4px;
+            page-break-inside: avoid;
+        }
+        p {
+            page-break-inside: avoid;
+        }
+        """
+
+        full_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body>{html_innehall}</body>
+        </html>
+        """
+
+        pdf_path = os.path.join(temp_dir, "protokoll.pdf")
+        HTML(string=full_html, base_url=temp_dir).write_pdf(
+            target=pdf_path, stylesheets=[CSS(string=css_stil)]
+        )
+
+        with open(pdf_path, "rb") as f:
+            return f.read()
+
+
+if st.button("🚀 Generera PDF-Protokoll", type="primary"):
+    if not markdown_text.strip():
+        st.warning("⚠️ Du måste klistra in text i rutan innan du skapar PDF:en.")
+    else:
+        try:
+            pdf_data = generera_pdf(markdown_text, st.session_state.uploaded_images)
+            st.success("✅ PDF har skapats!")
+            st.download_button(
+                label="📥 Ladda ned PDF",
+                data=pdf_data,
+                file_name="Motesprotokoll.pdf",
+                mime="application/pdf",
+            )
+        except Exception as e:
+            st.error(f"❌ Ett fel uppstod vid skapandet av PDF: {e}")

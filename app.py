@@ -104,18 +104,24 @@ else:
         sakert_link("pages/3_affarsplan_sammanfattning.py", "1. Sammanfattning")
         sakert_link("pages/3_affarsplan_ide.py", "2. Affärsidé och vision")
         sakert_link("pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning")
-        sakert_link("pages/3_affarsplan_marknad.py", "4. Marknad och bransch")
+        sakert_link(
+            "pages/3_affarsplan_produkter.py", "4. Produkter eller tjänster"
+        )
+        sakert_link("pages/3_affarsplan_marknad.py", "5. Marknad och bransch")
         sakert_link(
             "pages/3_affarsplan_forsaljning.py",
-            "5. Marknadsföring och försäljning",
+            "6. Marknadsföring och försäljning",
         )
         sakert_link(
-            "pages/3_affarsplan_organisation.py", "6. Organisation och personal"
+            "pages/3_affarsplan_organisation.py", "7. Organisation och personal"
         )
         sakert_link(
-            "pages/3_affarsplan_produkter.py", "7. Produkter eller tjänster"
+            "pages/3_affarsplan_riskanalys.py", "8. Riskanalys och hantering"
         )
-        sakert_link("pages/3_affarsplan_ekonomi.py", "8. Ekonomisk plan")
+        sakert_link(
+            "pages/3_affarsplan_genomforandeplan.py", "9. Genomförandeplan"
+        )
+        sakert_link("pages/3_affarsplan_ekonomi.py", "10. Ekonomisk plan")
 
     st.sidebar.divider()
     if st.sidebar.button("Logga ut"):

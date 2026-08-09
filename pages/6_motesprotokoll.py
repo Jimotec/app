@@ -110,27 +110,27 @@ if ny_filer:
 
 if st.session_state.uploaded_images:
     st.write("**Sortera och granska bilder:**")
-    st.caption("Ändra ordningen om du vill skifta vilken bild som hamnar under vilken punkt.")
+    st.caption("Ändra numret först i raden om du vill skifta vilken bild som hamnar under vilken punkt.")
 
     for index, img_obj in enumerate(st.session_state.uploaded_images):
-        col1, col2, col3 = st.columns([1, 2, 1])
+        col_num, col_img, col_txt = st.columns([1, 2, 4])
 
-        with col1:
-            st.image(img_obj["file"], width=130)
-
-        with col2:
-            st.write(f"**Filnamn:** {img_obj['file'].name}")
-            st.info(f"Bild {img_obj['order']} -> Kopplas till Punkt {img_obj['order']}")
-
-        with col3:
+        with col_num:
             ny_ordning = st.number_input(
-                "Bildnummer (ID):",
+                "Bild ID:",
                 min_value=1,
                 max_value=99,
                 value=img_obj["order"],
                 key=f"order_{index}_{img_obj['file'].name}",
             )
             img_obj["order"] = ny_ordning
+
+        with col_img:
+            st.image(img_obj["file"], width=130)
+
+        with col_txt:
+            st.write("")
+            st.info(f"Bild {img_obj['order']} -> Kopplas till Punkt {img_obj['order']}")
 
     st.session_state.uploaded_images.sort(key=lambda x: x["order"])
 
@@ -159,7 +159,6 @@ def generera_outlook_ics(atgarder_list, frtg):
         beskrivning = f"Aktivitet: {item['aktivitet']}\nAnsvarig: {item['ansvarig']}\nKlar senast: {item['datum']}\nKopplat till möte för: {frtg}"
         event.add('description', beskrivning)
         
-        # Sätt start och förfallodatum i kalendern
         due_datetime = datetime.combine(item['datum'], datetime.min.time()).replace(hour=9, minute=0)
         
         event.add('dtstart', due_datetime)

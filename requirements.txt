@@ -2,3 +2,4 @@ streamlit
 google-genai
 markdown
 fpdf2
+icalendar

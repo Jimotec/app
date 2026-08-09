@@ -21,7 +21,7 @@ if os.path.exists("app.py"):
     st.sidebar.page_link("app.py", label="👈 Tillbaka till Startsida")
 
 st.title("📋 Skapa Mötesprotokoll")
-st.write("Fyll i mötesinformation, klistra in din text från chatten och ladda upp bilder.")
+st.write("Fyll i mötesinformation, klistra in din text och koppla bilderna direkt till punkterna.")
 
 # --- SEKTION 1: SESSION STATE FOR BILDER ---
 if "uploaded_images" not in st.session_state:
@@ -41,11 +41,11 @@ with col_info2:
 
 st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
-    "Minnesanteckningar:",
+    "Minnesanteckningar (skriv t.ex. [Bild 1] där bilden skall visas):",
     height=220,
-    placeholder="""1. Genomgång av projekt status.
-2. Skada identifierad på vänster hörn vid leverans.
-3. Ny logotyp monterad och godkänd.
+    placeholder="""1. Genomgång av projektstatus.
+2. Skada identifierad på vänster hörn vid leverans. [Bild 1]
+3. Ny logotyp monterad och godkänd. [Bild 2]
 """,
 )
 
@@ -60,7 +60,7 @@ Beställa nytt material enligt punkt 2 | Mikael | Inköp""",
 st.divider()
 
 # --- SEKTION 3: BILDHANTERING & SORTERING ---
-st.subheader("4. Bilder (Skrivs ut i slutet av PDF:en)")
+st.subheader("4. Bilder")
 
 ny_filer = st.file_uploader(
     "Ladda upp bilder till protokollet:",
@@ -78,21 +78,21 @@ if ny_filer:
 
 if st.session_state.uploaded_images:
     st.write("**Sortera och granska bilder:**")
-    st.caption("Ändra numret i rutan för att justera vilken ordning bilderna visas i slutet av PDF:en.")
+    st.caption("Numret i rutan styr vilken bild som kopplas när du skriver [Bild 1], [Bild 2] osv. i texten.")
 
     for index, img_obj in enumerate(st.session_state.uploaded_images):
         col1, col2, col3 = st.columns([1, 2, 1])
 
         with col1:
-            st.image(img_obj["file"], width=150)
+            st.image(img_obj["file"], width=130)
 
         with col2:
             st.write(f"**Filnamn:** {img_obj['file'].name}")
-            st.info(f"Visas som Bild {img_obj['order']} i bilagan.")
+            st.info(f"Använd taggen: `[Bild {img_obj['order']}]` i texten ovan.")
 
         with col3:
             ny_ordning = st.number_input(
-                "Bildnummer / Ordning:",
+                "Bildnummer (ID):",
                 min_value=1,
                 max_value=99,
                 value=img_obj["order"],
@@ -187,74 +187,92 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.cell(0, 7, "MINNESANTECKNINGAR & PUNKTER", ln=True)
     pdf.ln(2)
 
-    rader = md_text.split("\n")
-    for rad in rader:
-        rad_trim = rad.strip()
-        if not rad_trim:
-            pdf.ln(2)
-            continue
-        pdf.set_font("Helvetica", "", 10)
-        pdf.set_text_color(30, 30, 30)
-        pdf.multi_cell(0, 5, clean_txt(rad_trim.replace("**", "")))
-
-    pdf.ln(6)
-
-    # 2. Sammanställd Åtgärdslista
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.set_text_color(26, 54, 93)
-    pdf.cell(0, 7, "SAMMANSTÄLLD ÅTGÄRDSLISTA", ln=True)
-    pdf.ln(2)
-
-    # Tabellhuvud
-    pdf.set_font("Helvetica", "B", 9)
-    pdf.set_fill_color(240, 244, 248)
-    pdf.set_text_color(26, 54, 93)
-    
-    pdf.cell(12, 7, "NR", border=1, align="C", fill=True)
-    pdf.cell(90, 7, "AKTIVITET / PUNKT", border=1, fill=True)
-    pdf.cell(43, 7, "ANSVARIG", border=1, fill=True)
-    pdf.cell(45, 7, "NOTERING / SYSTEM", border=1, ln=True, fill=True)
-
-    # Tabellrader
-    pdf.set_font("Helvetica", "", 9)
-    pdf.set_text_color(30, 30, 30)
-    
-    atgard_rader = [r.strip() for r in atgarder_raw.split("\n") if r.strip()]
-    for idx, rad in enumerate(atgard_rader, 1):
-        delar = [d.strip() for d in rad.split("|")]
-        aktivitet = delar[0] if len(delar) > 0 else ""
-        ansvarig = delar[1] if len(delar) > 1 else ""
-        notering = delar[2] if len(delar) > 2 else ""
-
-        pdf.cell(12, 6, str(idx), border=1, align="C")
-        pdf.cell(90, 6, clean_txt(aktivitet), border=1)
-        pdf.cell(43, 6, clean_txt(ansvarig), border=1)
-        pdf.cell(45, 6, clean_txt(notering), border=1, ln=True)
-
-    # Skapa tillfällig mapp för hela PDF-processen
     with tempfile.TemporaryDirectory() as temp_dir:
-        # 3. Bildbilaga
-        if bild_lista:
-            pdf.ln(8)
-            pdf.set_font("Helvetica", "B", 12)
-            pdf.set_text_color(26, 54, 93)
-            pdf.cell(0, 7, "BILDER & DOKUMENTATION", ln=True)
-            pdf.ln(3)
+        # Spara alla bilder i temp-mapp och bygg uppslagstabell
+        bild_map = {}
+        for img in bild_lista:
+            ext = os.path.splitext(img["file"].name)[1] or ".jpg"
+            save_path = os.path.join(temp_dir, f"bild_{img['order']}{ext}")
+            with open(save_path, "wb") as f:
+                f.write(img["file"].getvalue())
+            
+            # Sökbara nycklar för taggar
+            bild_map[f"[bild {img['order']}]"] = save_path
+            bild_map[f"bild{img['order']}.jpg"] = save_path
+            bild_map[f"bild{img['order']}.png"] = save_path
+            bild_map[img["file"].name.lower()] = save_path
 
+        rader = md_text.split("\n")
+        for rad in rader:
+            rad_trim = rad.strip()
+            if not rad_trim:
+                pdf.ln(2)
+                continue
+
+            # Kolla om en bild-tagg finns på raden
+            bild_hittad_path = None
+            for tagg, path in bild_map.items():
+                if tagg in rad_trim.lower():
+                    bild_hittad_path = path
+                    # Ta bort bildtaggen från själva textraden
+                    for t in [tagg, tagg.upper(), tagg.title()]:
+                        rad_trim = rad_trim.replace(t, "").strip()
+                    break
+
+            # Skriv ut textpunkten
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_text_color(30, 30, 30)
+            pdf.multi_cell(0, 5, clean_txt(rad_trim.replace("**", "")))
+
+            # Om bilden är kopplad till punkten, skriv ut den direkt under i lite mindre storlek
+            if bild_hittad_path:
+                pdf.ln(2)
+                pdf.image(bild_hittad_path, x=15, w=65)  # Kompakt bredd (65mm) direkt under punkten
+                pdf.ln(3)
+
+        # Om ingen tagg skrevs i texten men bilder ändå laddats upp, lägg ut dem direkt under sista punkten
+        om_inga_taggar = not any(tagg in md_text.lower() for tagg in bild_map.keys())
+        if bild_lista and om_inga_taggar:
+            pdf.ln(2)
             for img in bild_lista:
                 ext = os.path.splitext(img["file"].name)[1] or ".jpg"
-                save_path = os.path.join(temp_dir, f"bild_{img['order']}{ext}")
-                
-                with open(save_path, "wb") as f:
-                    f.write(img["file"].getvalue())
+                path = os.path.join(temp_dir, f"bild_{img['order']}{ext}")
+                pdf.image(path, x=15, w=65)
+                pdf.ln(3)
 
-                pdf.set_font("Helvetica", "B", 10)
-                pdf.set_text_color(43, 108, 176)
-                pdf.cell(0, 6, clean_txt(f"Bild {img['order']}: {img['file'].name}"), ln=True)
-                pdf.ln(1)
-                
-                pdf.image(save_path, x=10, w=140)
-                pdf.ln(6)
+        pdf.ln(4)
+
+        # 2. Sammanställd Åtgärdslista
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.set_text_color(26, 54, 93)
+        pdf.cell(0, 7, "SAMMANSTÄLLD ÅTGÄRDSLISTA", ln=True)
+        pdf.ln(2)
+
+        # Tabellhuvud
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_fill_color(240, 244, 248)
+        pdf.set_text_color(26, 54, 93)
+        
+        pdf.cell(12, 7, "NR", border=1, align="C", fill=True)
+        pdf.cell(90, 7, "AKTIVITET / PUNKT", border=1, fill=True)
+        pdf.cell(43, 7, "ANSVARIG", border=1, fill=True)
+        pdf.cell(45, 7, "NOTERING / SYSTEM", border=1, ln=True, fill=True)
+
+        # Tabellrader
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(30, 30, 30)
+        
+        atgard_rader = [r.strip() for r in atgarder_raw.split("\n") if r.strip()]
+        for idx, rad in enumerate(atgard_rader, 1):
+            delar = [d.strip() for d in rad.split("|")]
+            aktivitet = delar[0] if len(delar) > 0 else ""
+            ansvarig = delar[1] if len(delar) > 1 else ""
+            notering = delar[2] if len(delar) > 2 else ""
+
+            pdf.cell(12, 6, str(idx), border=1, align="C")
+            pdf.cell(90, 6, clean_txt(aktivitet), border=1)
+            pdf.cell(43, 6, clean_txt(ansvarig), border=1)
+            pdf.cell(45, 6, clean_txt(notering), border=1, ln=True)
 
         pdf_path = os.path.join(temp_dir, "Jimotec_Protokoll.pdf")
         pdf.output(pdf_path)

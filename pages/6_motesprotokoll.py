@@ -39,13 +39,12 @@ with col_info2:
     plats = st.text_input("Plats:", value="Online / Kontoret")
     deltagare = st.text_input("Deltagare:", value="Torbjörn Karlsson - VD")
 
-st.subheader("2. Protokolltext (Markdown & Bilder)")
+st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
-    "Minnesanteckningar & Punkter:",
+    "Minnesanteckningar:",
     height=220,
     placeholder="""1. Genomgång av projekt status.
-2. Skada identifierad på vänster hörn.
-   ![Skada hörn](bild1.jpg)
+2. Skada identifierad på vänster hörn vid leverans.
 3. Ny logotyp monterad och godkänd.
 """,
 )
@@ -61,7 +60,7 @@ Beställa nytt material enligt punkt 2 | Mikael | Inköp""",
 st.divider()
 
 # --- SEKTION 3: BILDHANTERING & SORTERING ---
-st.subheader("4. Bilder")
+st.subheader("4. Bilder (Skrivs ut i slutet av PDF:en)")
 
 ny_filer = st.file_uploader(
     "Ladda upp bilder till protokollet:",
@@ -79,7 +78,7 @@ if ny_filer:
 
 if st.session_state.uploaded_images:
     st.write("**Sortera och granska bilder:**")
-    st.caption("Ändra numret i rutan om du vill ändra bildernas ordningsföljd/referens.")
+    st.caption("Ändra numret i rutan för att justera vilken ordning bilderna visas i slutet av PDF:en.")
 
     for index, img_obj in enumerate(st.session_state.uploaded_images):
         col1, col2, col3 = st.columns([1, 2, 1])
@@ -88,12 +87,12 @@ if st.session_state.uploaded_images:
             st.image(img_obj["file"], width=150)
 
         with col2:
-            st.write(f"**Originalfil:** {img_obj['file'].name}")
-            st.info(f"Kopplad som: `bild{img_obj['order']}.jpg`")
+            st.write(f"**Filnamn:** {img_obj['file'].name}")
+            st.info(f"Visas som Bild {img_obj['order']} i bilagan.")
 
         with col3:
             ny_ordning = st.number_input(
-                "Bildnummer (ID):",
+                "Bildnummer / Ordning:",
                 min_value=1,
                 max_value=99,
                 value=img_obj["order"],
@@ -109,10 +108,9 @@ if st.session_state.uploaded_images:
 
 st.divider()
 
-# --- SEKTION 4: PDF GENERATOR (FPDF2 - JIMOTEC MALL) ---
+# --- SEKTION 4: PDF GENERATOR (JIMOTEC MALL) ---
 class JimotecPDF(FPDF):
     def header(self):
-        # Sök efter logotyp
         logo_paths = ["Jimotec.jpg", "jimotec.jpg", "Jimotec.png", "jimotec.png", "../Jimotec.jpg"]
         logo_found = None
         for path in logo_paths:
@@ -148,7 +146,7 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     def clean_txt(t):
         return t.encode("latin-1", "replace").decode("latin-1")
 
-    # Mötesfakta (2-kolumners vy)
+    # Mötesfakta
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
     
@@ -183,89 +181,87 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(6)
 
-    # Minnesanteckningar Rubrik
+    # 1. Minnesanteckningar
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(26, 54, 93)
     pdf.cell(0, 7, "MINNESANTECKNINGAR & PUNKTER", ln=True)
     pdf.ln(2)
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Spara bilder lokalt
-        bild_map = {}
-        for img in bild_lista:
-            ext = os.path.splitext(img["file"].name)[1] or ".jpg"
-            alias_name = f"bild{img['order']}{ext}".lower()
-            save_path = os.path.join(temp_dir, alias_name)
-            with open(save_path, "wb") as f:
-                f.write(img["file"].getvalue())
-            bild_map[f"bild{img['order']}".lower()] = save_path
-            bild_map[img["file"].name.lower()] = save_path
+    rader = md_text.split("\n")
+    for rad in rader:
+        rad_trim = rad.strip()
+        if not rad_trim:
+            pdf.ln(2)
+            continue
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(30, 30, 30)
+        pdf.multi_cell(0, 5, clean_txt(rad_trim.replace("**", "")))
 
-        # Rendera punkter
-        rader = md_text.split("\n")
-        for rad in rader:
-            rad_trim = rad.strip()
-            if not rad_trim:
-                pdf.ln(2)
-                continue
+    pdf.ln(6)
 
-            if "![" in rad_trim or "bild" in rad_trim.lower():
-                hittat = False
-                for key, img_path in bild_map.items():
-                    if key in rad_trim.lower():
-                        pdf.ln(2)
-                        pdf.image(img_path, w=120)
-                        pdf.ln(2)
-                        hittat = True
-                        break
-                if not hittat:
-                    pdf.set_font("Helvetica", "", 10)
-                    pdf.set_text_color(30, 30, 30)
-                    pdf.multi_cell(0, 5, clean_txt(rad_trim.replace("**", "")))
-            else:
-                pdf.set_font("Helvetica", "", 10)
-                pdf.set_text_color(30, 30, 30)
-                pdf.multi_cell(0, 5, clean_txt(rad_trim.replace("**", "")))
+    # 2. Sammanställd Åtgärdslista
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_text_color(26, 54, 93)
+    pdf.cell(0, 7, "SAMMANSTÄLLD ÅTGÄRDSLISTA", ln=True)
+    pdf.ln(2)
 
-        pdf.ln(6)
+    # Tabellhuvud
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_fill_color(240, 244, 248)
+    pdf.set_text_color(26, 54, 93)
+    
+    pdf.cell(12, 7, "NR", border=1, align="C", fill=True)
+    pdf.cell(90, 7, "AKTIVITET / PUNKT", border=1, fill=True)
+    pdf.cell(43, 7, "ANSVARIG", border=1, fill=True)
+    pdf.cell(45, 7, "NOTERING / SYSTEM", border=1, ln=True, fill=True)
 
-        # Åtgärdslista Rubrik
+    # Tabellrader
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(30, 30, 30)
+    
+    atgard_rader = [r.strip() for r in atgards_text.split("\n") if r.strip()]
+    for idx, rad in enumerate(atgard_rader, 1):
+        delar = [d.strip() for d in rad.split("|")]
+        aktivitet = delar[0] if len(delar) > 0 else ""
+        ansvarig = delar[1] if len(delar) > 1 else ""
+        notering = delar[2] if len(delar) > 2 else ""
+
+        pdf.cell(12, 6, str(idx), border=1, align="C")
+        pdf.cell(90, 6, clean_txt(aktivitet), border=1)
+        pdf.cell(43, 6, clean_txt(ansvarig), border=1)
+        pdf.cell(45, 6, clean_txt(notering), border=1, ln=True)
+
+    # 3. Bildbilaga (Alla uppladdade bilder placeras efter alla punkter/tabeller)
+    if bild_lista:
+        pdf.ln(8)
         pdf.set_font("Helvetica", "B", 12)
         pdf.set_text_color(26, 54, 93)
-        pdf.cell(0, 7, "SAMMANSTÄLLD ÅTGÄRDSLISTA", ln=True)
-        pdf.ln(2)
+        pdf.cell(0, 7, "BILDER & DOKUMENTATION", ln=True)
+        pdf.ln(3)
 
-        # Tabellhuvud
-        pdf.set_font("Helvetica", "B", 9)
-        pdf.set_fill_color(240, 244, 248)
-        pdf.set_text_color(26, 54, 93)
-        
-        pdf.cell(12, 7, "NR", border=1, align="C", fill=True)
-        pdf.cell(90, 7, "AKTIVITET / PUNKT", border=1, fill=True)
-        pdf.cell(43, 7, "ANSVARIG", border=1, fill=True)
-        pdf.cell(45, 7, "NOTERING / SYSTEM", border=1, ln=True, fill=True)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for img in bild_lista:
+                ext = os.path.splitext(img["file"].name)[1] or ".jpg"
+                save_path = os.path.join(temp_dir, f"bild_{img['order']}{ext}")
+                
+                with open(save_path, "wb") as f:
+                    f.write(img["file"].getvalue())
 
-        # Tabellrader
-        pdf.set_font("Helvetica", "", 9)
-        pdf.set_text_color(30, 30, 30)
-        
-        atgard_rader = [r.strip() for r in atgards_text.split("\n") if r.strip()]
-        for idx, rad in enumerate(atgard_rader, 1):
-            delar = [d.strip() for d in rad.split("|")]
-            aktivitet = delar[0] if len(delar) > 0 else ""
-            ansvarig = delar[1] if len(delar) > 1 else ""
-            notering = delar[2] if len(delar) > 2 else ""
+                # Skriv ut bildrubrik och bild
+                pdf.set_font("Helvetica", "B", 10)
+                pdf.set_text_color(43, 108, 176)
+                pdf.cell(0, 6, clean_txt(f"Bild {img['order']}: {img['file'].name}"), ln=True)
+                pdf.ln(1)
+                
+                # Centrerad bild
+                pdf.image(save_path, x=10, w=140)
+                pdf.ln(6)
 
-            pdf.cell(12, 6, str(idx), border=1, align="C")
-            pdf.cell(90, 6, clean_txt(aktivitet), border=1)
-            pdf.cell(43, 6, clean_txt(ansvarig), border=1)
-            pdf.cell(45, 6, clean_txt(notering), border=1, ln=True)
+    pdf_path = os.path.join(temp_dir, "Jimotec_Protokoll.pdf")
+    pdf.output(pdf_path)
 
-        pdf_path = os.path.join(temp_dir, "Jimotec_Protokoll.pdf")
-        pdf.output(pdf_path)
-
-        with open(pdf_path, "rb") as f:
-            return f.read()
+    with open(pdf_path, "rb") as f:
+        return f.read()
 
 
 # --- SEKTION 5: KNAPP FÖR SKAPANDE ---

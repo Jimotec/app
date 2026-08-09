@@ -37,9 +37,10 @@ with col_info1:
 
 with col_info2:
     plats = st.text_input("Plats:", value="Online / Kontoret")
-    deltagare = st.text_input(
-        "Deltagare (på en rad):",
-        value="Torbjörn Karlsson - VD, Mikael Svensson - Projektledare",
+    deltagare = st.text_area(
+        "Deltagare (en per rad):",
+        value="Torbjörn Karlsson - VD\nMikael Svensson - Projektledare",
+        height=100,
     )
 
 st.subheader("2. Minnesanteckningar & Punkter")
@@ -152,7 +153,7 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
             return ""
         return str(t).encode("latin-1", "replace").decode("latin-1")
 
-    # Mötesfakta (Deltagare på en enda rad)
+    # Mötesfakta (Deltagare i en kolumn med en rad per person)
     pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
@@ -168,6 +169,10 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.set_text_color(30, 30, 30)
     pdf.cell(75, 5, clean_txt(frtg), ln=True)
 
+    # Plats och Första deltagaren
+    deltagare_lista = [clean_txt(d.strip()) for d in deltag.split("\n") if d.strip()]
+    första_deltagare = deltagare_lista[0] if deltagare_lista else ""
+
     pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
@@ -179,12 +184,15 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
     pdf.cell(22, 5, "DELTAGARE:", ln=False)
-    
-    # Skriver ut alla deltagare på en enda rak rad
-    deltagare_enkelrad = " ".join(clean_txt(deltag).split())
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
-    pdf.cell(75, 5, deltagare_enkelrad, ln=True)
+    pdf.cell(75, 5, första_deltagare, ln=True)
+
+    # Övriga deltagare skrivs ut på egna rader i kolumnen
+    if len(deltagare_lista) > 1:
+        for övrig in deltagare_lista[1:]:
+            pdf.set_x(125)  # Flytta markören exakt till deltagarkolumnen
+            pdf.cell(75, 5, övrig, ln=True)
 
     pdf.ln(4)
     pdf.set_draw_color(200, 200, 200)

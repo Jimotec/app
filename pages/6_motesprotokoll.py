@@ -37,14 +37,18 @@ with col_info1:
 
 with col_info2:
     plats = st.text_input("Plats:", value="Online / Kontoret")
-    deltagare = st.text_input("Deltagare:", value="Torbjörn Karlsson - VD")
+    deltagare = st.text_area(
+        "Deltagare (en eller flera med titlar):",
+        value="Torbjörn Karlsson - VD\nMikael Svensson - Projektledare",
+        height=80,
+    )
 
 st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
-    "Minnesanteckningar (du kan skriva [Bild 1] vid punkten, eller så kopplas Bild 1 till Punkt 1 automatiskt):",
+    "Minnesanteckningar:",
     height=220,
-    placeholder="""1. Genomgång av projektstatus och slarviga stift. [Bild 1]
-2. Skada identifierad på vänster hörn vid leverans. [Bild 2]
+    placeholder="""1. Fel stift
+2. Smeda
 """,
 )
 
@@ -53,7 +57,7 @@ atgards_text = st.text_area(
     "Ange åtgärder (en per rad i formatet: Aktivitet | Ansvarig | Notering):",
     height=120,
     placeholder="""Uppdatera stift i CAD | Torbjörn | System
-Beställa nytt material enligt punkt 2 | Mikael | Inköp""",
+Slipa smeda | Mikael | Verkstad""",
 )
 
 st.divider()
@@ -149,7 +153,7 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
             return ""
         return str(t).encode("latin-1", "replace").decode("latin-1")
 
-    # Mötesfakta
+    # Mötesfakta med stöd för flerradiga deltagare
     pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
@@ -176,9 +180,12 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
     pdf.cell(22, 5, "DELTAGARE:", ln=False)
+    
+    # Omvandla radbrytningar i deltagarfältet till kommatecken eller ren flerradstext
+    deltagare_clean = ", ".join([d.strip() for d in deltag.split("\n") if d.strip()])
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
-    pdf.cell(75, 5, clean_txt(deltag), ln=True)
+    pdf.multi_cell(75, 5, clean_txt(deltagare_clean))
 
     pdf.ln(4)
     pdf.set_draw_color(200, 200, 200)
@@ -193,7 +200,6 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.ln(2)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Sparar bilderna
         bild_paths_by_order = {}
         for img in bild_lista:
             ext = os.path.splitext(img["file"].name)[1] or ".jpg"
@@ -203,15 +209,12 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
             bild_paths_by_order[img["order"]] = save_path
 
         rader = [r.strip() for r in md_text.split("\n") if r.strip()]
-        
-        # Räknare för automatisk bildkoppling om taggar saknas
         punkt_index = 1
 
         for rad in rader:
             rad_text = rad
             bild_som_ska_visas = None
 
-            # 1. Sök efter manuell tagg som [Bild 1]
             for order, img_path in bild_paths_by_order.items():
                 taggar = [f"[bild {order}]", f"[bild{order}]", f"bild {order}", f"bild{order}"]
                 for t in taggar:
@@ -223,20 +226,17 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
                 if bild_som_ska_visas:
                     break
 
-            # 2. Om ingen tagg hittades, koppla bild N till punkt N
             if not bild_som_ska_visas and punkt_index in bild_paths_by_order:
                 bild_som_ska_visas = bild_paths_by_order[punkt_index]
 
-            # Skriv ut textpunkten
             pdf.set_x(10)
             pdf.set_font("Helvetica", "", 10)
             pdf.set_text_color(30, 30, 30)
             pdf.multi_cell(0, 5, clean_txt(rad_text.replace("**", "")))
 
-            # Om en bild hör till denna punkt, skriv ut den direkt under!
             if bild_som_ska_visas:
                 pdf.ln(2)
-                pdf.image(bild_som_ska_visas, x=15, w=60) # Kompakt bild direkt under punkten
+                pdf.image(bild_som_ska_visas, x=15, w=60)
                 pdf.ln(3)
 
             punkt_index += 1

@@ -41,11 +41,10 @@ with col_info2:
 
 st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
-    "Minnesanteckningar (skriv t.ex. [Bild 1] där bilden skall visas):",
+    "Minnesanteckningar (du kan skriva [Bild 1] vid punkten, eller så kopplas Bild 1 till Punkt 1 automatiskt):",
     height=220,
-    placeholder="""1. Genomgång av projektstatus.
-2. Skada identifierad på vänster hörn vid leverans. [Bild 1]
-3. Ny logotyp monterad och godkänd. [Bild 2]
+    placeholder="""1. Genomgång av projektstatus och slarviga stift. [Bild 1]
+2. Skada identifierad på vänster hörn vid leverans. [Bild 2]
 """,
 )
 
@@ -53,7 +52,7 @@ st.subheader("3. Åtgärdslista (Tabell)")
 atgards_text = st.text_area(
     "Ange åtgärder (en per rad i formatet: Aktivitet | Ansvarig | Notering):",
     height=120,
-    placeholder="""Uppdatera ritningshuvud i CAD | Torbjörn | System
+    placeholder="""Uppdatera stift i CAD | Torbjörn | System
 Beställa nytt material enligt punkt 2 | Mikael | Inköp""",
 )
 
@@ -78,7 +77,7 @@ if ny_filer:
 
 if st.session_state.uploaded_images:
     st.write("**Sortera och granska bilder:**")
-    st.caption("Numret i rutan styr vilken bild som kopplas när du skriver [Bild 1], [Bild 2] osv. i texten.")
+    st.caption("Ändra ordningen om du vill skifta vilken bild som hamnar under vilken punkt.")
 
     for index, img_obj in enumerate(st.session_state.uploaded_images):
         col1, col2, col3 = st.columns([1, 2, 1])
@@ -88,7 +87,7 @@ if st.session_state.uploaded_images:
 
         with col2:
             st.write(f"**Filnamn:** {img_obj['file'].name}")
-            st.info(f"Använd taggen: `[Bild {img_obj['order']}]` i texten ovan.")
+            st.info(f"Bild {img_obj['order']} -> Kopplas till Punkt {img_obj['order']}")
 
         with col3:
             ny_ordning = st.number_input(
@@ -108,7 +107,7 @@ if st.session_state.uploaded_images:
 
 st.divider()
 
-# --- SEKTION 4: PDF GENERATOR (SÄKERSTÄLLD LAYOUT) ---
+# --- SEKTION 4: PDF GENERATOR ---
 class JimotecPDF(FPDF):
     def header(self):
         logo_paths = ["Jimotec.jpg", "jimotec.jpg", "Jimotec.png", "jimotec.png", "../Jimotec.jpg"]
@@ -186,7 +185,7 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(6)
 
-    # 1. Minnesanteckningar
+    # Minnesanteckningar Rubrik
     pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(26, 54, 93)
@@ -194,63 +193,64 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.ln(2)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        bild_map = {}
+        # Sparar bilderna
+        bild_paths_by_order = {}
         for img in bild_lista:
             ext = os.path.splitext(img["file"].name)[1] or ".jpg"
             save_path = os.path.join(temp_dir, f"bild_{img['order']}{ext}")
             with open(save_path, "wb") as f:
                 f.write(img["file"].getvalue())
-            
-            bild_map[f"[bild {img['order']}]"] = save_path
-            bild_map[f"bild{img['order']}.jpg"] = save_path
-            bild_map[f"bild{img['order']}.png"] = save_path
-            bild_map[img["file"].name.lower()] = save_path
+            bild_paths_by_order[img["order"]] = save_path
 
-        rader = md_text.split("\n")
+        rader = [r.strip() for r in md_text.split("\n") if r.strip()]
+        
+        # Räknare för automatisk bildkoppling om taggar saknas
+        punkt_index = 1
+
         for rad in rader:
-            rad_trim = rad.strip()
-            if not rad_trim:
-                pdf.ln(2)
-                continue
+            rad_text = rad
+            bild_som_ska_visas = None
 
-            bild_hittad_path = None
-            for tagg, path in bild_map.items():
-                if tagg in rad_trim.lower():
-                    bild_hittad_path = path
-                    for t in [tagg, tagg.upper(), tagg.title()]:
-                        rad_trim = rad_trim.replace(t, "").strip()
+            # 1. Sök efter manuell tagg som [Bild 1]
+            for order, img_path in bild_paths_by_order.items():
+                taggar = [f"[bild {order}]", f"[bild{order}]", f"bild {order}", f"bild{order}"]
+                for t in taggar:
+                    if t in rad_text.lower():
+                        bild_som_ska_visas = img_path
+                        for t_clean in [t, t.upper(), t.title()]:
+                            rad_text = rad_text.replace(t_clean, "").strip()
+                        break
+                if bild_som_ska_visas:
                     break
 
+            # 2. Om ingen tagg hittades, koppla bild N till punkt N
+            if not bild_som_ska_visas and punkt_index in bild_paths_by_order:
+                bild_som_ska_visas = bild_paths_by_order[punkt_index]
+
+            # Skriv ut textpunkten
             pdf.set_x(10)
             pdf.set_font("Helvetica", "", 10)
             pdf.set_text_color(30, 30, 30)
-            # w=0 fyller hela vägen till högermarginalen utan kraschfara
-            pdf.multi_cell(0, 5, clean_txt(rad_trim.replace("**", "")))
+            pdf.multi_cell(0, 5, clean_txt(rad_text.replace("**", "")))
 
-            if bild_hittad_path:
+            # Om en bild hör till denna punkt, skriv ut den direkt under!
+            if bild_som_ska_visas:
                 pdf.ln(2)
-                pdf.image(bild_hittad_path, x=15, w=65)
+                pdf.image(bild_som_ska_visas, x=15, w=60) # Kompakt bild direkt under punkten
                 pdf.ln(3)
 
-        om_inga_taggar = not any(tagg in md_text.lower() for tagg in bild_map.keys())
-        if bild_lista and om_inga_taggar:
-            pdf.ln(2)
-            for img in bild_lista:
-                ext = os.path.splitext(img["file"].name)[1] or ".jpg"
-                path = os.path.join(temp_dir, f"bild_{img['order']}{ext}")
-                pdf.image(path, x=15, w=65)
-                pdf.ln(3)
+            punkt_index += 1
 
         pdf.ln(4)
 
-        # 2. Sammanställd Åtgärdslista
+        # Åtgärdslista
         pdf.set_x(10)
         pdf.set_font("Helvetica", "B", 12)
         pdf.set_text_color(26, 54, 93)
         pdf.cell(0, 7, "SAMMANSTÄLLD ÅTGÄRDSLISTA", ln=True)
         pdf.ln(2)
 
-        # Tabellhuvud (Totalt 190 mm)
+        # Tabellhuvud
         pdf.set_x(10)
         pdf.set_font("Helvetica", "B", 9)
         pdf.set_fill_color(240, 244, 248)

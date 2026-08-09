@@ -1,6 +1,6 @@
 import os
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 import streamlit as st
 from fpdf import FPDF
 from icalendar import Calendar, Event
@@ -25,11 +25,16 @@ if os.path.exists("app.py"):
 st.title("📋 Skapa Mötesprotokoll")
 st.write("Fyll i mötesinformation, klistra in din text och koppla bilderna direkt till punkterna.")
 
-# --- SEKTION 1: SESSION STATE FOR BILDER ---
+# --- SESSION STATES ---
 if "uploaded_images" not in st.session_state:
     st.session_state.uploaded_images = []
 
-# --- SEKTION 2: MÖTESINFO & TEXTINPUT ---
+if "atgarder_lista" not in st.session_state:
+    st.session_state.atgarder_lista = [
+        {"aktivitet": "", "ansvarig": "Torbjörn", "datum": date.today() + timedelta(days=7)}
+    ]
+
+# --- SEKTION 1: MÖTESINFO & TEXTINPUT ---
 st.subheader("1. Mötesinformation")
 col_info1, col_info2 = st.columns(2)
 
@@ -48,23 +53,45 @@ with col_info2:
 st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
     "Minnesanteckningar:",
-    height=220,
+    height=200,
     placeholder="""1. Fel stift
 2. Smeda
 """,
 )
 
-st.subheader("3. Åtgärdslista (Tabell)")
-atgards_text = st.text_area(
-    "Ange åtgärder (en per rad i formatet: Aktivitet | Ansvarig | Notering):",
-    height=120,
-    placeholder="""Uppdatera stift i CAD | Torbjörn | System
-Slipa smeda | Mikael | Verkstad""",
-)
+st.subheader("3. Åtgärdslista (Rutor för Ansvarig & Datum)")
+
+# Dynamiska rader för åtgärder
+ny_atgarder = []
+for idx, item in enumerate(st.session_state.atgarder_lista):
+    col_akt, col_ans, col_dat, col_del = st.columns([4, 2, 2, 1])
+    
+    with col_akt:
+        akt_val = st.text_input(f"Aktivitet #{idx+1}", value=item["aktivitet"], key=f"akt_{idx}")
+    with col_ans:
+        ans_val = st.text_input(f"Ansvarig #{idx+1}", value=item["ansvarig"], key=f"ans_{idx}")
+    with col_dat:
+        dat_val = st.date_input(f"Klar senast #{idx+1}", value=item["datum"], key=f"dat_{idx}")
+    with col_del:
+        st.write("")
+        st.write("")
+        if st.button("❌", key=f"del_{idx}"):
+            st.session_state.atgarder_lista.pop(idx)
+            st.rerun()
+            
+    ny_atgarder.append({"aktivitet": akt_val, "ansvarig": ans_val, "datum": dat_val})
+
+st.session_state.atgarder_lista = ny_atgarder
+
+if st.button("➕ Lägg till ny åtgärdsrad"):
+    st.session_state.atgarder_lista.append(
+        {"aktivitet": "", "ansvarig": "", "datum": date.today() + timedelta(days=7)}
+    )
+    st.rerun()
 
 st.divider()
 
-# --- SEKTION 3: BILDHANTERING & SORTERING ---
+# --- SEKTION 2: BILDHANTERING & SORTERING ---
 st.subheader("4. Bilder")
 
 ny_filer = st.file_uploader(
@@ -113,36 +140,30 @@ if st.session_state.uploaded_images:
 
 st.divider()
 
-# --- SEKTION 4: FUNKTION FÖR OUTLOOK ICS-FIL ---
-def generera_outlook_ics(atgarder_raw, frtg):
+# --- SEKTION 3: FUNKTION FÖR OUTLOOK ICS-FIL ---
+def generera_outlook_ics(atgarder_list, frtg):
     cal = Calendar()
     cal.add('prodid', '-//Jimotec AB Task Exporter//jimotec.se//')
     cal.add('version', '2.0')
 
-    atgard_rader = [r.strip() for r in atgarder_raw.split("\n") if r.strip()]
-    if not atgard_rader:
+    aktiva_atgarder = [a for a in atgarder_list if a["aktivitet"].strip()]
+    if not aktiva_atgarder:
         return None
 
     now = datetime.now()
     
-    for idx, rad in enumerate(atgard_rader, 1):
-        delar = [d.strip() for d in rad.split("|")]
-        aktivitet = delar[0] if len(delar) > 0 else f"Åtgärd {idx}"
-        ansvarig = delar[1] if len(delar) > 1 else "Ej angiven"
-        notering = delar[2] if len(delar) > 2 else ""
-
+    for idx, item in enumerate(aktiva_atgarder, 1):
         event = Event()
-        event.add('summary', f"[Åtgärd Jimotec] {aktivitet}")
+        event.add('summary', f"[Åtgärd Jimotec] {item['aktivitet']}")
         
-        beskrivning = f"Aktivitet: {aktivitet}\nAnsvarig: {ansvarig}\nNotering/System: {notering}\nKopplat till möte för: {frtg}"
+        beskrivning = f"Aktivitet: {item['aktivitet']}\nAnsvarig: {item['ansvarig']}\nKlar senast: {item['datum']}\nKopplat till möte för: {frtg}"
         event.add('description', beskrivning)
         
-        # Sätt påminnelse/start imorgon kl 09:00
-        start_time = now + timedelta(days=1)
-        start_time = start_time.replace(hour=9, minute=0, second=0, microsecond=0)
+        # Sätt start och förfallodatum i kalendern
+        due_datetime = datetime.combine(item['datum'], datetime.min.time()).replace(hour=9, minute=0)
         
-        event.add('dtstart', start_time)
-        event.add('dtend', start_time + timedelta(hours=1))
+        event.add('dtstart', due_datetime)
+        event.add('dtend', due_datetime + timedelta(hours=1))
         event.add('dtstamp', now)
 
         cal.add_component(event)
@@ -150,7 +171,7 @@ def generera_outlook_ics(atgarder_raw, frtg):
     return cal.to_ical()
 
 
-# --- SEKTION 5: PDF GENERATOR ---
+# --- SEKTION 4: PDF GENERATOR ---
 class JimotecPDF(FPDF):
     def header(self):
         logo_paths = ["Jimotec.jpg", "jimotec.jpg", "Jimotec.png", "jimotec.png", "../Jimotec.jpg"]
@@ -180,7 +201,7 @@ class JimotecPDF(FPDF):
         self.cell(0, 10, f"Sida {self.page_no()} av {{nb}}", align="C")
 
 
-def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_lista):
+def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_list, bild_lista):
     pdf = JimotecPDF()
     pdf.alias_nb_pages()
     pdf.set_margins(10, 10, 10)
@@ -294,33 +315,28 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
         pdf.cell(0, 7, "SAMMANSTÄLLD ÅTGÄRDSLISTA", ln=True)
         pdf.ln(2)
 
-        # Tabellhuvud
+        # Tabellhuvud (Totalt 190 mm)
         pdf.set_x(10)
         pdf.set_font("Helvetica", "B", 9)
         pdf.set_fill_color(240, 244, 248)
         pdf.set_text_color(26, 54, 93)
         
         pdf.cell(12, 7, "NR", border=1, align="C", fill=True)
-        pdf.cell(88, 7, "AKTIVITET / PUNKT", border=1, fill=True)
+        pdf.cell(90, 7, "AKTIVITET / PUNKT", border=1, fill=True)
         pdf.cell(45, 7, "ANSVARIG", border=1, fill=True)
-        pdf.cell(45, 7, "NOTERING / SYSTEM", border=1, ln=True, fill=True)
+        pdf.cell(43, 7, "KLAR SENAST", border=1, ln=True, fill=True)
 
         # Tabellrader
         pdf.set_font("Helvetica", "", 9)
         pdf.set_text_color(30, 30, 30)
         
-        atgard_rader = [r.strip() for r in atgarder_raw.split("\n") if r.strip()]
-        for idx, rad in enumerate(atgard_rader, 1):
-            delar = [d.strip() for d in rad.split("|")]
-            aktivitet = delar[0] if len(delar) > 0 else ""
-            ansvarig = delar[1] if len(delar) > 1 else ""
-            notering = delar[2] if len(delar) > 2 else ""
-
+        aktiva_atgarder = [a for a in atgarder_list if a["aktivitet"].strip()]
+        for idx, item in enumerate(aktiva_atgarder, 1):
             pdf.set_x(10)
             pdf.cell(12, 6, str(idx), border=1, align="C")
-            pdf.cell(88, 6, clean_txt(aktivitet[:50]), border=1)
-            pdf.cell(45, 6, clean_txt(ansvarig[:22]), border=1)
-            pdf.cell(45, 6, clean_txt(notering[:22]), border=1, ln=True)
+            pdf.cell(90, 6, clean_txt(item["aktivitet"][:50]), border=1)
+            pdf.cell(45, 6, clean_txt(item["ansvarig"][:22]), border=1)
+            pdf.cell(43, 6, str(item["datum"]), border=1, ln=True)
 
         pdf_path = os.path.join(temp_dir, "Jimotec_Protokoll.pdf")
         pdf.output(pdf_path)
@@ -331,7 +347,7 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     return pdf_bytes
 
 
-# --- SEKTION 6: SKAPA EXPORT (PDF + OUTLOOK) ---
+# --- SEKTION 5: SKAPA EXPORT (PDF + OUTLOOK) ---
 st.subheader("5. Skapa & Exportera")
 
 col_btn1, col_btn2 = st.columns(2)
@@ -348,7 +364,7 @@ with col_btn1:
                     plats,
                     deltagare,
                     markdown_text,
-                    atgards_text,
+                    st.session_state.atgarder_lista,
                     st.session_state.uploaded_images,
                 )
                 st.success("✅ PDF har skapats!")
@@ -364,11 +380,12 @@ with col_btn1:
 
 with col_btn2:
     if st.button("📅 Skapa Outlook-uppgifter (.ics)", use_container_width=True):
-        if not atgards_text.strip():
-            st.warning("⚠️ Fyll i minst en rad i åtgärdslistan för att exportera till Outlook.")
+        har_atgarder = any(a["aktivitet"].strip() for a in st.session_state.atgarder_lista)
+        if not har_atgarder:
+            st.warning("⚠️ Fyll i minst en aktivitet i åtgärdslistan för att exportera till Outlook.")
         else:
             try:
-                ics_data = generera_outlook_ics(atgards_text, foretag)
+                ics_data = generera_outlook_ics(st.session_state.atgarder_lista, foretag)
                 st.success("✅ Outlook-fil skapad!")
                 st.download_button(
                     label="📥 Ladda ned till Outlook / Kalender",

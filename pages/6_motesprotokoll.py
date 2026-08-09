@@ -219,7 +219,7 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
     
-    atgard_rader = [r.strip() for r in atgards_text.split("\n") if r.strip()]
+    atgard_rader = [r.strip() for r in atgarder_raw.split("\n") if r.strip()]
     for idx, rad in enumerate(atgard_rader, 1):
         delar = [d.strip() for d in rad.split("|")]
         aktivitet = delar[0] if len(delar) > 0 else ""
@@ -231,15 +231,16 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
         pdf.cell(43, 6, clean_txt(ansvarig), border=1)
         pdf.cell(45, 6, clean_txt(notering), border=1, ln=True)
 
-    # 3. Bildbilaga (Alla uppladdade bilder placeras efter alla punkter/tabeller)
-    if bild_lista:
-        pdf.ln(8)
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.set_text_color(26, 54, 93)
-        pdf.cell(0, 7, "BILDER & DOKUMENTATION", ln=True)
-        pdf.ln(3)
+    # Skapa tillfällig mapp för hela PDF-processen
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # 3. Bildbilaga
+        if bild_lista:
+            pdf.ln(8)
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.set_text_color(26, 54, 93)
+            pdf.cell(0, 7, "BILDER & DOKUMENTATION", ln=True)
+            pdf.ln(3)
 
-        with tempfile.TemporaryDirectory() as temp_dir:
             for img in bild_lista:
                 ext = os.path.splitext(img["file"].name)[1] or ".jpg"
                 save_path = os.path.join(temp_dir, f"bild_{img['order']}{ext}")
@@ -247,21 +248,21 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
                 with open(save_path, "wb") as f:
                     f.write(img["file"].getvalue())
 
-                # Skriv ut bildrubrik och bild
                 pdf.set_font("Helvetica", "B", 10)
                 pdf.set_text_color(43, 108, 176)
                 pdf.cell(0, 6, clean_txt(f"Bild {img['order']}: {img['file'].name}"), ln=True)
                 pdf.ln(1)
                 
-                # Centrerad bild
                 pdf.image(save_path, x=10, w=140)
                 pdf.ln(6)
 
-    pdf_path = os.path.join(temp_dir, "Jimotec_Protokoll.pdf")
-    pdf.output(pdf_path)
+        pdf_path = os.path.join(temp_dir, "Jimotec_Protokoll.pdf")
+        pdf.output(pdf_path)
 
-    with open(pdf_path, "rb") as f:
-        return f.read()
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+
+    return pdf_bytes
 
 
 # --- SEKTION 5: KNAPP FÖR SKAPANDE ---

@@ -108,7 +108,7 @@ if st.session_state.uploaded_images:
 
 st.divider()
 
-# --- SEKTION 4: PDF GENERATOR (JIMOTEC MALL) ---
+# --- SEKTION 4: PDF GENERATOR (SÄKERSTÄLLD LAYOUT) ---
 class JimotecPDF(FPDF):
     def header(self):
         logo_paths = ["Jimotec.jpg", "jimotec.jpg", "Jimotec.png", "jimotec.png", "../Jimotec.jpg"]
@@ -123,12 +123,13 @@ class JimotecPDF(FPDF):
 
         self.set_font("Helvetica", "B", 18)
         self.set_text_color(26, 54, 93)
-        self.cell(0, 12, "MÖTESPROTOKOLL", border=False, ln=True, align="R")
+        self.set_xy(10, 8)
+        self.cell(190, 12, "MÖTESPROTOKOLL", border=False, ln=True, align="R")
         
         self.set_draw_color(26, 54, 93)
         self.set_line_width(0.8)
-        self.line(10, 25, 200, 25)
-        self.ln(8)
+        self.line(10, 24, 200, 24)
+        self.set_y(28)
 
     def footer(self):
         self.set_y(-15)
@@ -140,41 +141,45 @@ class JimotecPDF(FPDF):
 def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_lista):
     pdf = JimotecPDF()
     pdf.alias_nb_pages()
+    pdf.set_margins(10, 10, 10)
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
 
     def clean_txt(t):
-        return t.encode("latin-1", "replace").decode("latin-1")
+        if not t:
+            return ""
+        return str(t).encode("latin-1", "replace").decode("latin-1")
 
     # Mötesfakta
+    pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
-    
-    pdf.cell(30, 5, "DATUM & TID:", ln=False)
+    pdf.cell(28, 5, "DATUM & TID:", ln=False)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
     pdf.cell(65, 5, clean_txt(d_tid), ln=False)
     
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
-    pdf.cell(25, 5, "FÖRETAG:", ln=False)
+    pdf.cell(22, 5, "FÖRETAG:", ln=False)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
-    pdf.cell(70, 5, clean_txt(frtg), ln=True)
+    pdf.cell(75, 5, clean_txt(frtg), ln=True)
 
+    pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
-    pdf.cell(30, 5, "PLATS:", ln=False)
+    pdf.cell(28, 5, "PLATS:", ln=False)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
     pdf.cell(65, 5, clean_txt(plts), ln=False)
 
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
-    pdf.cell(25, 5, "DELTAGARE:", ln=False)
+    pdf.cell(22, 5, "DELTAGARE:", ln=False)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
-    pdf.cell(70, 5, clean_txt(deltag), ln=True)
+    pdf.cell(75, 5, clean_txt(deltag), ln=True)
 
     pdf.ln(4)
     pdf.set_draw_color(200, 200, 200)
@@ -182,13 +187,13 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.ln(6)
 
     # 1. Minnesanteckningar
+    pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(26, 54, 93)
     pdf.cell(0, 7, "MINNESANTECKNINGAR & PUNKTER", ln=True)
     pdf.ln(2)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Spara alla bilder i temp-mapp och bygg uppslagstabell
         bild_map = {}
         for img in bild_lista:
             ext = os.path.splitext(img["file"].name)[1] or ".jpg"
@@ -196,7 +201,6 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
             with open(save_path, "wb") as f:
                 f.write(img["file"].getvalue())
             
-            # Sökbara nycklar för taggar
             bild_map[f"[bild {img['order']}]"] = save_path
             bild_map[f"bild{img['order']}.jpg"] = save_path
             bild_map[f"bild{img['order']}.png"] = save_path
@@ -209,28 +213,25 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
                 pdf.ln(2)
                 continue
 
-            # Kolla om en bild-tagg finns på raden
             bild_hittad_path = None
             for tagg, path in bild_map.items():
                 if tagg in rad_trim.lower():
                     bild_hittad_path = path
-                    # Ta bort bildtaggen från själva textraden
                     for t in [tagg, tagg.upper(), tagg.title()]:
                         rad_trim = rad_trim.replace(t, "").strip()
                     break
 
-            # Skriv ut textpunkten
+            pdf.set_x(10)
             pdf.set_font("Helvetica", "", 10)
             pdf.set_text_color(30, 30, 30)
+            # w=0 fyller hela vägen till högermarginalen utan kraschfara
             pdf.multi_cell(0, 5, clean_txt(rad_trim.replace("**", "")))
 
-            # Om bilden är kopplad till punkten, skriv ut den direkt under i lite mindre storlek
             if bild_hittad_path:
                 pdf.ln(2)
-                pdf.image(bild_hittad_path, x=15, w=65)  # Kompakt bredd (65mm) direkt under punkten
+                pdf.image(bild_hittad_path, x=15, w=65)
                 pdf.ln(3)
 
-        # Om ingen tagg skrevs i texten men bilder ändå laddats upp, lägg ut dem direkt under sista punkten
         om_inga_taggar = not any(tagg in md_text.lower() for tagg in bild_map.keys())
         if bild_lista and om_inga_taggar:
             pdf.ln(2)
@@ -243,19 +244,21 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
         pdf.ln(4)
 
         # 2. Sammanställd Åtgärdslista
+        pdf.set_x(10)
         pdf.set_font("Helvetica", "B", 12)
         pdf.set_text_color(26, 54, 93)
         pdf.cell(0, 7, "SAMMANSTÄLLD ÅTGÄRDSLISTA", ln=True)
         pdf.ln(2)
 
-        # Tabellhuvud
+        # Tabellhuvud (Totalt 190 mm)
+        pdf.set_x(10)
         pdf.set_font("Helvetica", "B", 9)
         pdf.set_fill_color(240, 244, 248)
         pdf.set_text_color(26, 54, 93)
         
         pdf.cell(12, 7, "NR", border=1, align="C", fill=True)
-        pdf.cell(90, 7, "AKTIVITET / PUNKT", border=1, fill=True)
-        pdf.cell(43, 7, "ANSVARIG", border=1, fill=True)
+        pdf.cell(88, 7, "AKTIVITET / PUNKT", border=1, fill=True)
+        pdf.cell(45, 7, "ANSVARIG", border=1, fill=True)
         pdf.cell(45, 7, "NOTERING / SYSTEM", border=1, ln=True, fill=True)
 
         # Tabellrader
@@ -269,10 +272,11 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
             ansvarig = delar[1] if len(delar) > 1 else ""
             notering = delar[2] if len(delar) > 2 else ""
 
+            pdf.set_x(10)
             pdf.cell(12, 6, str(idx), border=1, align="C")
-            pdf.cell(90, 6, clean_txt(aktivitet), border=1)
-            pdf.cell(43, 6, clean_txt(ansvarig), border=1)
-            pdf.cell(45, 6, clean_txt(notering), border=1, ln=True)
+            pdf.cell(88, 6, clean_txt(aktivitet[:50]), border=1)
+            pdf.cell(45, 6, clean_txt(ansvarig[:22]), border=1)
+            pdf.cell(45, 6, clean_txt(notering[:22]), border=1, ln=True)
 
         pdf_path = os.path.join(temp_dir, "Jimotec_Protokoll.pdf")
         pdf.output(pdf_path)

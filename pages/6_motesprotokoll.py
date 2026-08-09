@@ -37,10 +37,9 @@ with col_info1:
 
 with col_info2:
     plats = st.text_input("Plats:", value="Online / Kontoret")
-    deltagare = st.text_area(
-        "Deltagare (en eller flera med titlar):",
-        value="Torbjörn Karlsson - VD\nMikael Svensson - Projektledare",
-        height=80,
+    deltagare = st.text_input(
+        "Deltagare (på en rad):",
+        value="Torbjörn Karlsson - VD, Mikael Svensson - Projektledare",
     )
 
 st.subheader("2. Minnesanteckningar & Punkter")
@@ -153,7 +152,7 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
             return ""
         return str(t).encode("latin-1", "replace").decode("latin-1")
 
-    # Mötesfakta med stöd för flerradiga deltagare
+    # Mötesfakta (Deltagare på en enda rad)
     pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
@@ -181,11 +180,11 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.set_text_color(26, 54, 93)
     pdf.cell(22, 5, "DELTAGARE:", ln=False)
     
-    # Omvandla radbrytningar i deltagarfältet till kommatecken eller ren flerradstext
-    deltagare_clean = ", ".join([d.strip() for d in deltag.split("\n") if d.strip()])
+    # Skriver ut alla deltagare på en enda rak rad
+    deltagare_enkelrad = " ".join(clean_txt(deltag).split())
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
-    pdf.multi_cell(75, 5, clean_txt(deltagare_clean))
+    pdf.cell(75, 5, deltagare_enkelrad, ln=True)
 
     pdf.ln(4)
     pdf.set_draw_color(200, 200, 200)

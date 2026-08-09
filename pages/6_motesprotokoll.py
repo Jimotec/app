@@ -1,7 +1,9 @@
 import os
 import tempfile
+from datetime import datetime, timedelta
 import streamlit as st
 from fpdf import FPDF
+from icalendar import Calendar, Event
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
@@ -111,7 +113,44 @@ if st.session_state.uploaded_images:
 
 st.divider()
 
-# --- SEKTION 4: PDF GENERATOR ---
+# --- SEKTION 4: FUNKTION FÖR OUTLOOK ICS-FIL ---
+def generera_outlook_ics(atgarder_raw, frtg):
+    cal = Calendar()
+    cal.add('prodid', '-//Jimotec AB Task Exporter//jimotec.se//')
+    cal.add('version', '2.0')
+
+    atgard_rader = [r.strip() for r in atgarder_raw.split("\n") if r.strip()]
+    if not atgard_rader:
+        return None
+
+    now = datetime.now()
+    
+    for idx, rad in enumerate(atgard_rader, 1):
+        delar = [d.strip() for d in rad.split("|")]
+        aktivitet = delar[0] if len(delar) > 0 else f"Åtgärd {idx}"
+        ansvarig = delar[1] if len(delar) > 1 else "Ej angiven"
+        notering = delar[2] if len(delar) > 2 else ""
+
+        event = Event()
+        event.add('summary', f"[Åtgärd Jimotec] {aktivitet}")
+        
+        beskrivning = f"Aktivitet: {aktivitet}\nAnsvarig: {ansvarig}\nNotering/System: {notering}\nKopplat till möte för: {frtg}"
+        event.add('description', beskrivning)
+        
+        # Sätt påminnelse/start imorgon kl 09:00
+        start_time = now + timedelta(days=1)
+        start_time = start_time.replace(hour=9, minute=0, second=0, microsecond=0)
+        
+        event.add('dtstart', start_time)
+        event.add('dtend', start_time + timedelta(hours=1))
+        event.add('dtstamp', now)
+
+        cal.add_component(event)
+
+    return cal.to_ical()
+
+
+# --- SEKTION 5: PDF GENERATOR ---
 class JimotecPDF(FPDF):
     def header(self):
         logo_paths = ["Jimotec.jpg", "jimotec.jpg", "Jimotec.png", "jimotec.png", "../Jimotec.jpg"]
@@ -153,7 +192,7 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
             return ""
         return str(t).encode("latin-1", "replace").decode("latin-1")
 
-    # Mötesfakta (Deltagare i en kolumn med en rad per person)
+    # Mötesfakta
     pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
@@ -169,7 +208,6 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.set_text_color(30, 30, 30)
     pdf.cell(75, 5, clean_txt(frtg), ln=True)
 
-    # Plats och Första deltagaren
     deltagare_lista = [clean_txt(d.strip()) for d in deltag.split("\n") if d.strip()]
     första_deltagare = deltagare_lista[0] if deltagare_lista else ""
 
@@ -188,10 +226,9 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.set_text_color(30, 30, 30)
     pdf.cell(75, 5, första_deltagare, ln=True)
 
-    # Övriga deltagare skrivs ut på egna rader i kolumnen
     if len(deltagare_lista) > 1:
         for övrig in deltagare_lista[1:]:
-            pdf.set_x(125)  # Flytta markören exakt till deltagarkolumnen
+            pdf.set_x(125)
             pdf.cell(75, 5, övrig, ln=True)
 
     pdf.ln(4)
@@ -199,7 +236,7 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(6)
 
-    # Minnesanteckningar Rubrik
+    # Minnesanteckningar
     pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(26, 54, 93)
@@ -294,29 +331,51 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_raw, bild_
     return pdf_bytes
 
 
-# --- SEKTION 5: KNAPP FÖR SKAPANDE ---
-st.subheader("5. Skapa PDF")
+# --- SEKTION 6: SKAPA EXPORT (PDF + OUTLOOK) ---
+st.subheader("5. Skapa & Exportera")
 
-if st.button("🚀 Generera PDF-Protokoll", type="primary"):
-    if not markdown_text.strip():
-        st.warning("⚠️ Du måste fylla i protokolltexten innan du skapar PDF:en.")
-    else:
-        try:
-            pdf_data = generera_pdf_jimotec(
-                datum_tid,
-                foretag,
-                plats,
-                deltagare,
-                markdown_text,
-                atgards_text,
-                st.session_state.uploaded_images,
-            )
-            st.success("✅ PDF har skapats i Jimotec-mallen!")
-            st.download_button(
-                label="📥 Ladda ned PDF",
-                data=pdf_data,
-                file_name="Motesprotokoll_Jimotec.pdf",
-                mime="application/pdf",
-            )
-        except Exception as e:
-            st.error(f"❌ Ett fel uppstod vid skapandet av PDF: {e}")
+col_btn1, col_btn2 = st.columns(2)
+
+with col_btn1:
+    if st.button("🚀 Generera PDF-Protokoll", type="primary", use_container_width=True):
+        if not markdown_text.strip():
+            st.warning("⚠️ Du måste fylla i protokolltexten innan du skapar PDF:en.")
+        else:
+            try:
+                pdf_data = generera_pdf_jimotec(
+                    datum_tid,
+                    foretag,
+                    plats,
+                    deltagare,
+                    markdown_text,
+                    atgards_text,
+                    st.session_state.uploaded_images,
+                )
+                st.success("✅ PDF har skapats!")
+                st.download_button(
+                    label="📥 Ladda ned PDF",
+                    data=pdf_data,
+                    file_name="Motesprotokoll_Jimotec.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                )
+            except Exception as e:
+                st.error(f"❌ Ett fel uppstod vid skapandet av PDF: {e}")
+
+with col_btn2:
+    if st.button("📅 Skapa Outlook-uppgifter (.ics)", use_container_width=True):
+        if not atgards_text.strip():
+            st.warning("⚠️ Fyll i minst en rad i åtgärdslistan för att exportera till Outlook.")
+        else:
+            try:
+                ics_data = generera_outlook_ics(atgards_text, foretag)
+                st.success("✅ Outlook-fil skapad!")
+                st.download_button(
+                    label="📥 Ladda ned till Outlook / Kalender",
+                    data=ics_data,
+                    file_name="Jimotec_Atgarder.ics",
+                    mime="text/calendar",
+                    use_container_width=True,
+                )
+            except Exception as e:
+                st.error(f"❌ Ett fel uppstod: {e}")

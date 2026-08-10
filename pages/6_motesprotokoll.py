@@ -49,11 +49,13 @@ if "atgarder_lista" not in st.session_state:
 
 def oversatt_text(text, target="en"):
     """Hjälpfunktion för att översätta text till engelska."""
-    if not text or not text.strip():
+    if not text or not str(text).strip():
         return text
     if TRANSLATOR_AVAILABLE:
         try:
-            return GoogleTranslator(source="auto", target=target).translate(text)
+            return GoogleTranslator(source="auto", target=target).translate(
+                str(text)
+            )
         except Exception:
             return text
     return text
@@ -324,11 +326,7 @@ def generera_pdf_jimotec(
             return ""
         return str(t).encode("latin-1", "replace").decode("latin-1")
 
-    # Om engelska är valt, översätt ALL text automatiskt
-    if is_en and TRANSLATOR_AVAILABLE:
-        md_text = oversatt_text(md_text, "en")
-        plts = oversatt_text(plts, "en")
-
+    # Språkanpassade rubriker
     lbl_date = "DATE & TIME:" if is_en else "DATUM & TID:"
     lbl_comp = "COMPANY:" if is_en else "FÖRETAG:"
     lbl_loc = "LOCATION:" if is_en else "PLATS:"
@@ -341,6 +339,10 @@ def generera_pdf_jimotec(
     lbl_act = "ACTIVITY / ITEM" if is_en else "AKTIVITET / PUNKT"
     lbl_resp = "RESPONSIBLE" if is_en else "ANSVARIG"
     lbl_due = "DUE DATE" if is_en else "KLAR SENAST"
+
+    # Översätt plats om engelska
+    if is_en and TRANSLATOR_AVAILABLE:
+        plts = oversatt_text(plts, "en")
 
     # Mötesfakta
     pdf.set_x(10)
@@ -409,6 +411,11 @@ def generera_pdf_jimotec(
 
         for rad in rader:
             rad_text = rad
+
+            # TVINGAD ÖVERSÄTTNING PER RAD OM ENGELSKA
+            if is_en and TRANSLATOR_AVAILABLE:
+                rad_text = oversatt_text(rad_text, "en")
+
             bild_som_ska_visas = None
 
             for order, img_path in bild_paths_by_order.items():
@@ -470,11 +477,10 @@ def generera_pdf_jimotec(
 
         aktiva_atgarder = [a for a in atgarder_list if a["aktivitet"].strip()]
         for idx, item in enumerate(aktiva_atgarder, 1):
-            akt_str = (
-                oversatt_text(item["aktivitet"], "en")
-                if is_en
-                else item["aktivitet"]
-            )
+            akt_str = item["aktivitet"]
+            if is_en and TRANSLATOR_AVAILABLE:
+                akt_str = oversatt_text(akt_str, "en")
+
             pdf.set_x(10)
             pdf.cell(12, 6, str(idx), border=1, align="C")
             pdf.cell(90, 6, clean_txt(akt_str[:50]), border=1)
@@ -534,6 +540,11 @@ with col_pdf2:
         if not markdown_text.strip():
             st.warning(
                 "⚠️ Du måste fylla i protokolltexten innan du skapar PDF:en."
+            )
+        elif not TRANSLATOR_AVAILABLE:
+            st.error(
+                "❌ Översättningsmodulen 'deep-translator' saknas i systemet."
+                " Kör 'pip install deep-translator' i din miljö."
             )
         else:
             try:

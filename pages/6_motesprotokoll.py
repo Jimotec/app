@@ -1,16 +1,11 @@
 from datetime import date, datetime, timedelta
+import json
 import os
 import tempfile
+import urllib.parse
+import urllib.request
 from fpdf import FPDF
 import streamlit as st
-
-# Försök importera översättningsbiblioteket deep-translator
-try:
-    from deep_translator import GoogleTranslator
-
-    TRANSLATOR_AVAILABLE = True
-except ImportError:
-    TRANSLATOR_AVAILABLE = False
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
@@ -35,6 +30,35 @@ st.write(
     " punkterna."
 )
 
+
+# --- INBYGGDA ÖVERSÄTTNINGSFUNKTIONEN (kräver inga externa pip-paket) ---
+def oversatt_text(text, target="en"):
+    """Översätter text via Google Translate API med Pythons inbyggda urllib."""
+    if not text or not str(text).strip():
+        return text
+    try:
+        text_str = str(text).strip()
+        url = (
+            "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl="
+            + target
+            + "&dt=t&q="
+            + urllib.parse.quote(text_str)
+        )
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "Mozilla/5.0"}
+        )
+        response = urllib.request.urlopen(req, timeout=5)
+        data = json.loads(response.read().decode("utf-8"))
+
+        res_text = ""
+        for item in data[0]:
+            if item[0]:
+                res_text += item[0]
+        return res_text if res_text else text_str
+    except Exception:
+        return text
+
+
 # --- SESSION STATES ---
 if "uploaded_images" not in st.session_state:
     st.session_state.uploaded_images = []
@@ -46,20 +70,8 @@ if "atgarder_lista" not in st.session_state:
         "datum": date.today() + timedelta(days=7),
     }]
 
-
-def oversatt_text(text, target="en"):
-    """Hjälpfunktion för att översätta text till engelska."""
-    if not text or not str(text).strip():
-        return text
-    if TRANSLATOR_AVAILABLE:
-        try:
-            return GoogleTranslator(source="auto", target=target).translate(
-                str(text)
-            )
-        except Exception:
-            return text
-    return text
-
+if "markdown_text_val" not in st.session_state:
+    st.session_state.markdown_text_val = ""
 
 # --- SEKTION 1: MÖTESINFO & TEXTINPUT ---
 st.subheader("1. Mötesinformation")
@@ -80,11 +92,14 @@ with col_info2:
 st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
     "Minnesanteckningar:",
+    value=st.session_state.markdown_text_val,
     height=200,
+    key="markdown_text_input",
     placeholder="""1. Fel stift
 2. Smeda
 """,
 )
+st.session_state.markdown_text_val = markdown_text
 
 st.subheader("3. Åtgärdslista (Rutor för Ansvarig & Datum)")
 
@@ -340,8 +355,7 @@ def generera_pdf_jimotec(
     lbl_resp = "RESPONSIBLE" if is_en else "ANSVARIG"
     lbl_due = "DUE DATE" if is_en else "KLAR SENAST"
 
-    # Översätt plats om engelska
-    if is_en and TRANSLATOR_AVAILABLE:
+    if is_en:
         plts = oversatt_text(plts, "en")
 
     # Mötesfakta
@@ -412,8 +426,8 @@ def generera_pdf_jimotec(
         for rad in rader:
             rad_text = rad
 
-            # TVINGAD ÖVERSÄTTNING PER RAD OM ENGELSKA
-            if is_en and TRANSLATOR_AVAILABLE:
+            # Översätt varje rad om engelska är valt
+            if is_en:
                 rad_text = oversatt_text(rad_text, "en")
 
             bild_som_ska_visas = None
@@ -478,7 +492,7 @@ def generera_pdf_jimotec(
         aktiva_atgarder = [a for a in atgarder_list if a["aktivitet"].strip()]
         for idx, item in enumerate(aktiva_atgarder, 1):
             akt_str = item["aktivitet"]
-            if is_en and TRANSLATOR_AVAILABLE:
+            if is_en:
                 akt_str = oversatt_text(akt_str, "en")
 
             pdf.set_x(10)
@@ -541,22 +555,27 @@ with col_pdf2:
             st.warning(
                 "⚠️ Du måste fylla i protokolltexten innan du skapar PDF:en."
             )
-        elif not TRANSLATOR_AVAILABLE:
-            st.error(
-                "❌ Översättningsmodulen 'deep-translator' saknas i systemet."
-                " Kör 'pip install deep-translator' i din miljö."
-            )
         else:
             try:
                 with st.spinner(
                     "Översätter minnesanteckningar & åtgärder till engelska..."
                 ):
+                    # Översätter även fälten på skärmen direkt till engelska
+                    st.session_state.markdown_text_val = oversatt_text(
+                        markdown_text, "en"
+                    )
+                    for item in st.session_state.atgarder_lista:
+                        if item["aktivitet"]:
+                            item["aktivitet"] = oversatt_text(
+                                item["aktivitet"], "en"
+                            )
+
                     pdf_data = generera_pdf_jimotec(
                         datum_tid,
                         foretag,
                         plats,
                         deltagare,
-                        markdown_text,
+                        st.session_state.markdown_text_val,
                         st.session_state.atgarder_lista,
                         st.session_state.uploaded_images,
                         is_en=True,

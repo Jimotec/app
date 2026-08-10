@@ -34,6 +34,10 @@ if "atgarder_lista" not in st.session_state:
         {"aktivitet": "", "ansvarig": "Torbjörn", "datum": date.today() + timedelta(days=7)}
     ]
 
+# BEVARAR MINNESANTECKNINGARNA I SESSION STATE
+if "markdown_text" not in st.session_state:
+    st.session_state.markdown_text = ""
+
 # --- SEKTION 1: MÖTESINFO & TEXTINPUT ---
 st.subheader("1. Mötesinformation")
 col_info1, col_info2 = st.columns(2)
@@ -51,12 +55,15 @@ with col_info2:
     )
 
 st.subheader("2. Minnesanteckningar & Punkter")
+
+# KOPPLAT DIRTKT TILL SESSION STATE VIA KEY
 markdown_text = st.text_area(
     "Minnesanteckningar:",
     height=200,
     placeholder="""1. Fel stift
 2. Smeda
 """,
+    key="markdown_text"
 )
 
 st.subheader("3. Åtgärdslista (Rutor för Ansvarig & Datum)")
@@ -353,7 +360,7 @@ col_btn1, col_btn2 = st.columns(2)
 
 with col_btn1:
     if st.button("🚀 Generera PDF-Protokoll", type="primary", use_container_width=True):
-        if not markdown_text.strip():
+        if not st.session_state.markdown_text.strip():
             st.warning("⚠️ Du måste fylla i protokolltexten innan du skapar PDF:en.")
         else:
             try:
@@ -362,7 +369,7 @@ with col_btn1:
                     foretag,
                     plats,
                     deltagare,
-                    markdown_text,
+                    st.session_state.markdown_text,
                     st.session_state.atgarder_lista,
                     st.session_state.uploaded_images,
                 )

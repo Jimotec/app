@@ -9,11 +9,17 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# Döljer automatiska listan i sidopanelen
+# Döljer automatiska listan i sidopanelen samt sätter maxbredd på knappar (~3 cm)
 st.markdown(
     """
     <style>
         [data-testid="stSidebarNav"] {display: none;}
+        
+        /* Gör alla vanliga st.button max ca 3 cm breda (~130px) */
+        div.stButton > button {
+            max-width: 130px !important;
+            width: 100% !important;
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -31,7 +37,7 @@ st.write(
 )
 
 
-# --- INBYGGDA ÖVERSÄTTNINGSFUNKTIONEN (kräver inga externa pip-paket) ---
+# --- INBYGGDA ÖVERSÄTTNINGSFUNKTIONEN ---
 def oversatt_text(text, target="en"):
     """Översätter text via Google Translate API med Pythons inbyggda urllib."""
     if not text or not str(text).strip():
@@ -133,7 +139,7 @@ for idx, item in enumerate(st.session_state.atgarder_lista):
 
 st.session_state.atgarder_lista = ny_atgarder
 
-if st.button("➕ Lägg till ny åtgärdsrad"):
+if st.button("➕ Lägg till"):
     st.session_state.atgarder_lista.append({
         "aktivitet": "",
         "ansvarig": "",
@@ -194,7 +200,7 @@ if st.session_state.uploaded_images:
 
     st.session_state.uploaded_images.sort(key=lambda x: x["order"])
 
-    if st.button("❌ Rensa alla bilder"):
+    if st.button("❌ Rensa alla"):
         st.session_state.uploaded_images = []
         st.rerun()
 
@@ -519,9 +525,7 @@ st.subheader("5. Skapa & Exportera")
 col_pdf1, col_pdf2 = st.columns(2)
 
 with col_pdf1:
-    if st.button(
-        "🇸🇪 Generera PDF (Svenska)", type="primary", use_container_width=True
-    ):
+    if st.button("🇸🇪 PDF (SV)", type="primary", use_container_width=False):
         if not markdown_text.strip():
             st.warning(
                 "⚠️ Du måste fylla i protokolltexten innan du skapar PDF:en."
@@ -538,29 +542,26 @@ with col_pdf1:
                     st.session_state.uploaded_images,
                     is_en=False,
                 )
-                st.success("✅ Svenskt PDF-protokoll skapat!")
+                st.success("✅ Skapad!")
                 st.download_button(
-                    label="📥 Ladda ned Svensk PDF",
+                    label="📥 Ladda ned",
                     data=pdf_data,
                     file_name="Motesprotokoll_Jimotec_SV.pdf",
                     mime="application/pdf",
-                    use_container_width=True,
+                    use_container_width=False,
                 )
             except Exception as e:
-                st.error(f"❌ Ett fel uppstod vid skapandet av PDF: {e}")
+                st.error(f"❌ Fel: {e}")
 
 with col_pdf2:
-    if st.button("🇬🇧 Generera PDF (Engelska)", use_container_width=True):
+    if st.button("🇬🇧 PDF (EN)", use_container_width=False):
         if not markdown_text.strip():
             st.warning(
                 "⚠️ Du måste fylla i protokolltexten innan du skapar PDF:en."
             )
         else:
             try:
-                with st.spinner(
-                    "Översätter minnesanteckningar & åtgärder till engelska..."
-                ):
-                    # Översätter även fälten på skärmen direkt till engelska
+                with st.spinner("Översätter..."):
                     st.session_state.markdown_text_val = oversatt_text(
                         markdown_text, "en"
                     )
@@ -580,16 +581,16 @@ with col_pdf2:
                         st.session_state.uploaded_images,
                         is_en=True,
                     )
-                st.success("✅ Engelskt PDF-protokoll skapat!")
+                st.success("✅ Skapad!")
                 st.download_button(
-                    label="📥 Ladda ned Engelsk PDF",
+                    label="📥 Ladda ned",
                     data=pdf_data,
                     file_name="Meeting_Minutes_Jimotec_EN.pdf",
                     mime="application/pdf",
-                    use_container_width=True,
+                    use_container_width=False,
                 )
             except Exception as e:
-                st.error(f"❌ Ett fel uppstod vid skapandet av engelsk PDF: {e}")
+                st.error(f"❌ Fel: {e}")
 
 st.divider()
 st.markdown("**Exportera till Outlook Uppgifter:**")
@@ -597,47 +598,47 @@ st.markdown("**Exportera till Outlook Uppgifter:**")
 col_exp1, col_exp2 = st.columns(2)
 
 with col_exp1:
-    if st.button("📋 Skapa Uppgift (.ics)", use_container_width=True):
+    if st.button("📋 Uppgift (.ics)", use_container_width=False):
         har_atgarder = any(
             a["aktivitet"].strip() for a in st.session_state.atgarder_lista
         )
         if not har_atgarder:
-            st.warning("⚠️ Fyll i minst en aktivitet i åtgärdslistan.")
+            st.warning("⚠️ Fyll i minst en aktivitet.")
         else:
             try:
                 ics_data = generera_outlook_ics_tasks(
                     st.session_state.atgarder_lista, foretag, is_en=False
                 )
-                st.success("✅ Uppgiftsfil (.ics) skapad!")
+                st.success("✅ Skapad!")
                 st.download_button(
-                    label="📥 Ladda ned Uppgifter (.ics)",
+                    label="📥 Ladda ned",
                     data=ics_data,
                     file_name="Jimotec_Uppgifter.ics",
                     mime="text/calendar",
-                    use_container_width=True,
+                    use_container_width=False,
                 )
             except Exception as e:
-                st.error(f"❌ Ett fel uppstod: {e}")
+                st.error(f"❌ Fel: {e}")
 
 with col_exp2:
-    if st.button("📊 Skapa Import-CSV (.csv)", use_container_width=True):
+    if st.button("📊 Import (.csv)", use_container_width=False):
         har_atgarder = any(
             a["aktivitet"].strip() for a in st.session_state.atgarder_lista
         )
         if not har_atgarder:
-            st.warning("⚠️ Fyll i minst en aktivitet i åtgärdslistan.")
+            st.warning("⚠️ Fyll i minst en aktivitet.")
         else:
             try:
                 csv_data = generera_outlook_csv(
                     st.session_state.atgarder_lista, foretag, is_en=False
                 )
-                st.success("✅ CSV-fil skapad!")
+                st.success("✅ Skapad!")
                 st.download_button(
-                    label="📥 Ladda ned CSV för Outlook",
+                    label="📥 Ladda ned",
                     data=csv_data,
                     file_name="Jimotec_Uppgifter_Outlook.csv",
                     mime="text/csv",
-                    use_container_width=True,
+                    use_container_width=False,
                 )
             except Exception as e:
-                st.error(f"❌ Ett fel uppstod: {e}")
+                st.error(f"❌ Fel: {e}")

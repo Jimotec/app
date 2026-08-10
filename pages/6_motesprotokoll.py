@@ -4,6 +4,14 @@ import tempfile
 from fpdf import FPDF
 import streamlit as st
 
+# Försök importera översättningsbiblioteket deep-translator
+try:
+    from deep_translator import GoogleTranslator
+
+    TRANSLATOR_AVAILABLE = True
+except ImportError:
+    TRANSLATOR_AVAILABLE = False
+
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
 # Döljer automatiska listan i sidopanelen
@@ -23,7 +31,8 @@ if os.path.exists("app.py"):
 
 st.title("📋 Skapa Mötesprotokoll")
 st.write(
-    "Fyll i mötesinformation, klistra in din text och koppla bilderna direkt till punkterna."
+    "Fyll i mötesinformation, klistra in din text och koppla bilderna direkt till"
+    " punkterna."
 )
 
 # --- SESSION STATES ---
@@ -36,6 +45,52 @@ if "atgarder_lista" not in st.session_state:
         "ansvarig": "Torbjörn",
         "datum": date.today() + timedelta(days=7),
     }]
+
+if "sprak" not in st.session_state:
+    st.session_state.sprak = "sv"  # Standard är svenska ("sv" eller "en")
+
+
+def oversatt_text(text, target="en"):
+    """Översätter text till engelska om translator är tillgängligt."""
+    if not text or not text.strip():
+        return text
+    if TRANSLATOR_AVAILABLE:
+        try:
+            return GoogleTranslator(source="auto", target=target).translate(text)
+        except Exception:
+            return text
+    return text
+
+
+# --- SEKTION 0: SPRÅK & ÖVERSÄTTNINGSKNAPP ---
+col_lang1, col_lang2 = st.columns([3, 1])
+with col_lang2:
+    if st.button("🇬🇧 Översätt protokollet till Engelska", use_container_width=True):
+        if not TRANSLATOR_AVAILABLE:
+            st.error(
+                "❌ Biblioteket 'deep-translator' saknas. Kör `pip install"
+                " deep-translator` i terminalen."
+            )
+        else:
+            with st.spinner("Översätter till engelska..."):
+                # Översätt minnesanteckningar
+                if st.session_state.get("md_text_input"):
+                    st.session_state.md_text_input = oversatt_text(
+                        st.session_state.md_text_input, "en"
+                    )
+
+                # Översätt åtgärdslistan
+                for item in st.session_state.atgarder_lista:
+                    if item["aktivitet"]:
+                        item["aktivitet"] = oversatt_text(
+                            item["aktivitet"], "en"
+                        )
+
+                st.session_state.sprak = "en"
+                st.success("✅ Protokollet har översatts till engelska!")
+                st.rerun()
+
+st.divider()
 
 # --- SEKTION 1: MÖTESINFO & TEXTINPUT ---
 st.subheader("1. Mötesinformation")
@@ -57,6 +112,7 @@ st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
     "Minnesanteckningar:",
     height=200,
+    key="md_text_input",
     placeholder="""1. Fel stift
 2. Smeda
 """,
@@ -163,13 +219,14 @@ st.divider()
 
 
 # --- SEKTION 3: FUNKTIONER FÖR OUTLOOK EXPORT (UPPGIFTER / TASKS) ---
-def generera_outlook_ics_tasks(atgarder_list, frtg):
+def generera_outlook_ics_tasks(atgarder_list, frtg, is_en=False):
     """Genererar en .ics-fil med VTODO-komponenter för att Outlook ska öppna dem som UPPGIFTER."""
     aktiva_atgarder = [a for a in atgarder_list if a["aktivitet"].strip()]
     if not aktiva_atgarder:
         return None
 
     now = datetime.now().strftime("%Y%m%dT%H%M%SZ")
+    prefix = "[Action Jimotec]" if is_en else "[Åtgärd Jimotec]"
 
     ics_lines = [
         "BEGIN:VCALENDAR",
@@ -180,11 +237,14 @@ def generera_outlook_ics_tasks(atgarder_list, frtg):
 
     for idx, item in enumerate(aktiva_atgarder, 1):
         due_date = item["datum"].strftime("%Y%m%d")
-        summary = f"[Åtgärd Jimotec] {item['aktivitet']}"
+        summary = f"{prefix} {item['aktivitet']}"
+        lbl_ans = "Assignee" if is_en else "Ansvarig"
+        lbl_due = "Due Date" if is_en else "Klar senast"
+        lbl_mtg = "Meeting for" if is_en else "Kopplat till möte för"
+
         description = (
-            f"Aktivitet: {item['aktivitet']}\\nAnsvarig:"
-            f" {item['ansvarig']}\\nKlar senast: {item['datum']}\\nKopplat till"
-            f" möte för: {frtg}"
+            f"Activity: {item['aktivitet']}\\n{lbl_ans}:"
+            f" {item['ansvarig']}\\n{lbl_due}: {item['datum']}\\n{lbl_mtg}: {frtg}"
         )
 
         ics_lines.extend([
@@ -202,7 +262,7 @@ def generera_outlook_ics_tasks(atgarder_list, frtg):
     return "\r\n".join(ics_lines).encode("utf-8")
 
 
-def generera_outlook_csv(atgarder_list, frtg):
+def generera_outlook_csv(atgarder_list, frtg, is_en=False):
     """Genererar en CSV-fil redo för direktimport till Outlooks Uppgiftsmapp."""
     import csv
     import io
@@ -213,14 +273,16 @@ def generera_outlook_csv(atgarder_list, frtg):
 
     output = io.StringIO()
     writer = csv.writer(output, delimiter=",", quoting=csv.QUOTE_MINIMAL)
-
-    # Standardrubriker som Outlook känner igen för Uppgifter
     writer.writerow(["Subject", "Due Date", "Body", "Priority"])
 
+    prefix = "[Action Jimotec]" if is_en else "[Åtgärd Jimotec]"
+    lbl_ans = "Assignee" if is_en else "Ansvarig"
+    lbl_mtg = "Meeting for" if is_en else "Kopplat till möte för"
+
     for item in aktiva_atgarder:
-        subject = f"[Åtgärd Jimotec] {item['aktivitet']}"
+        subject = f"{prefix} {item['aktivitet']}"
         due_date = item["datum"].strftime("%Y-%m-%d")
-        body = f"Ansvarig: {item['ansvarig']}\nKopplat till möte för: {frtg}"
+        body = f"{lbl_ans}: {item['ansvarig']}\n{lbl_mtg}: {frtg}"
         writer.writerow([subject, due_date, body, "Normal"])
 
     return output.getvalue().encode("utf-8-sig")
@@ -228,6 +290,10 @@ def generera_outlook_csv(atgarder_list, frtg):
 
 # --- SEKTION 4: PDF GENERATOR ---
 class JimotecPDF(FPDF):
+
+    def __init__(self, is_en=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_en = is_en
 
     def header(self):
         logo_paths = [
@@ -246,10 +312,11 @@ class JimotecPDF(FPDF):
         if logo_found:
             self.image(logo_found, x=10, y=8, w=45)
 
+        title_text = "MEETING MINUTES" if self.is_en else "MÖTESPROTOKOLL"
         self.set_font("Helvetica", "B", 18)
         self.set_text_color(26, 54, 93)
         self.set_xy(10, 8)
-        self.cell(190, 12, "MÖTESPROTOKOLL", border=False, ln=True, align="R")
+        self.cell(190, 12, title_text, border=False, ln=True, align="R")
 
         self.set_draw_color(26, 54, 93)
         self.set_line_width(0.8)
@@ -260,13 +327,18 @@ class JimotecPDF(FPDF):
         self.set_y(-15)
         self.set_font("Helvetica", "I", 8)
         self.set_text_color(120, 120, 120)
-        self.cell(0, 10, f"Sida {self.page_no()} av {{nb}}", align="C")
+        page_str = (
+            f"Page {self.page_no()} of {{nb}}"
+            if self.is_en
+            else f"Sida {self.page_no()} av {{nb}}"
+        )
+        self.cell(0, 10, page_str, align="C")
 
 
 def generera_pdf_jimotec(
-    d_tid, frtg, plts, deltag, md_text, atgarder_list, bild_lista
+    d_tid, frtg, plts, deltag, md_text, atgarder_list, bild_lista, is_en=False
 ):
-    pdf = JimotecPDF()
+    pdf = JimotecPDF(is_en=is_en)
     pdf.alias_nb_pages()
     pdf.set_margins(10, 10, 10)
     pdf.add_page()
@@ -277,18 +349,32 @@ def generera_pdf_jimotec(
             return ""
         return str(t).encode("latin-1", "replace").decode("latin-1")
 
+    # Labels baserade på språk
+    lbl_date = "DATE & TIME:" if is_en else "DATUM & TID:"
+    lbl_comp = "COMPANY:" if is_en else "FÖRETAG:"
+    lbl_loc = "LOCATION:" if is_en else "PLATS:"
+    lbl_att = "ATTENDEES:" if is_en else "DELTAGARE:"
+    lbl_notes = (
+        "NOTES & DISCUSSION POINTS" if is_en else "MINNESANTECKNINGAR & PUNKTER"
+    )
+    lbl_actions = "SUMMARY OF ACTION ITEMS" if is_en else "SAMMANSTÄLLD ÅTGÄRDSLISTA"
+    lbl_nr = "NO" if is_en else "NR"
+    lbl_act = "ACTIVITY / ITEM" if is_en else "AKTIVITET / PUNKT"
+    lbl_resp = "RESPONSIBLE" if is_en else "ANSVARIG"
+    lbl_due = "DUE DATE" if is_en else "KLAR SENAST"
+
     # Mötesfakta
     pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
-    pdf.cell(28, 5, "DATUM & TID:", ln=False)
+    pdf.cell(28, 5, lbl_date, ln=False)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
     pdf.cell(65, 5, clean_txt(d_tid), ln=False)
 
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
-    pdf.cell(22, 5, "FÖRETAG:", ln=False)
+    pdf.cell(22, 5, lbl_comp, ln=False)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
     pdf.cell(75, 5, clean_txt(frtg), ln=True)
@@ -301,14 +387,14 @@ def generera_pdf_jimotec(
     pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
-    pdf.cell(28, 5, "PLATS:", ln=False)
+    pdf.cell(28, 5, lbl_loc, ln=False)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
     pdf.cell(65, 5, clean_txt(plts), ln=False)
 
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(26, 54, 93)
-    pdf.cell(22, 5, "DELTAGARE:", ln=False)
+    pdf.cell(22, 5, lbl_att, ln=False)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(30, 30, 30)
     pdf.cell(75, 5, första_deltagare, ln=True)
@@ -327,7 +413,7 @@ def generera_pdf_jimotec(
     pdf.set_x(10)
     pdf.set_font("Helvetica", "B", 12)
     pdf.set_text_color(26, 54, 93)
-    pdf.cell(0, 7, "MINNESANTECKNINGAR & PUNKTER", ln=True)
+    pdf.cell(0, 7, lbl_notes, ln=True)
     pdf.ln(2)
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -352,6 +438,8 @@ def generera_pdf_jimotec(
                     f"[bild{order}]",
                     f"bild {order}",
                     f"bild{order}",
+                    f"[image {order}]",
+                    f"[image{order}]",
                 ]
                 for t in taggar:
                     if t in rad_text.lower():
@@ -383,7 +471,7 @@ def generera_pdf_jimotec(
         pdf.set_x(10)
         pdf.set_font("Helvetica", "B", 12)
         pdf.set_text_color(26, 54, 93)
-        pdf.cell(0, 7, "SAMMANSTÄLLD ÅTGÄRDSLISTA", ln=True)
+        pdf.cell(0, 7, lbl_actions, ln=True)
         pdf.ln(2)
 
         # Tabellhuvud (Totalt 190 mm)
@@ -392,10 +480,10 @@ def generera_pdf_jimotec(
         pdf.set_fill_color(240, 244, 248)
         pdf.set_text_color(26, 54, 93)
 
-        pdf.cell(12, 7, "NR", border=1, align="C", fill=True)
-        pdf.cell(90, 7, "AKTIVITET / PUNKT", border=1, fill=True)
-        pdf.cell(45, 7, "ANSVARIG", border=1, fill=True)
-        pdf.cell(43, 7, "KLAR SENAST", border=1, ln=True, fill=True)
+        pdf.cell(12, 7, lbl_nr, border=1, align="C", fill=True)
+        pdf.cell(90, 7, lbl_act, border=1, fill=True)
+        pdf.cell(45, 7, lbl_resp, border=1, fill=True)
+        pdf.cell(43, 7, lbl_due, border=1, ln=True, fill=True)
 
         # Tabellrader
         pdf.set_font("Helvetica", "", 9)
@@ -421,6 +509,8 @@ def generera_pdf_jimotec(
 # --- SEKTION 5: SKAPA EXPORT (PDF + OUTLOOK UPPGIFTER) ---
 st.subheader("5. Skapa & Exportera")
 
+is_english = st.session_state.sprak == "en"
+
 col_btn1, col_btn2 = st.columns(2)
 
 with col_btn1:
@@ -441,6 +531,7 @@ with col_btn1:
                     markdown_text,
                     st.session_state.atgarder_lista,
                     st.session_state.uploaded_images,
+                    is_en=is_english,
                 )
                 st.success("✅ PDF har skapats!")
                 st.download_button(
@@ -468,7 +559,9 @@ with col_btn2:
             else:
                 try:
                     ics_data = generera_outlook_ics_tasks(
-                        st.session_state.atgarder_lista, foretag
+                        st.session_state.atgarder_lista,
+                        foretag,
+                        is_en=is_english,
                     )
                     st.success("✅ Uppgiftsfil (.ics) skapad!")
                     st.download_button(
@@ -491,7 +584,9 @@ with col_btn2:
             else:
                 try:
                     csv_data = generera_outlook_csv(
-                        st.session_state.atgarder_lista, foretag
+                        st.session_state.atgarder_lista,
+                        foretag,
+                        is_en=is_english,
                     )
                     st.success("✅ CSV-fil skapad!")
                     st.download_button(

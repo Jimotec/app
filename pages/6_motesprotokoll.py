@@ -54,7 +54,7 @@ def oversatt_till_engelska(text):
             översatt_text = "".join([segment[0] for segment in res[0] if segment[0]])
             return översatt_text
     except Exception:
-        return text  # Returnera originaltext om översättningen misslyckas
+        return text
 
 
 # --- SEKTION 1: MÖTESINFO & TEXTINPUT ---
@@ -136,8 +136,10 @@ if st.session_state.uploaded_images:
     st.write("**Sortera och granska bilder:**")
     st.caption("Ändra numret först i raden om du vill skifta vilken bild som hamnar under vilken punkt.")
 
+    bild_som_ska_ta_bort = None
+
     for index, img_obj in enumerate(st.session_state.uploaded_images):
-        col_num, col_img, col_txt = st.columns([1, 2, 4])
+        col_num, col_img, col_btn = st.columns([1, 2, 2])
 
         with col_num:
             ny_ordning = st.number_input(
@@ -152,12 +154,19 @@ if st.session_state.uploaded_images:
         with col_img:
             st.image(img_obj["file"], width=130)
 
-        with col_txt:
+        with col_btn:
             st.write("")
-            st.info(f"Bild {img_obj['order']} -> Kopplas till Punkt {img_obj['order']}")
+            st.write("")
+            if st.button("🗑️ Ta bort bild", key=f"del_img_{index}_{img_obj['file'].name}"):
+                bild_som_ska_ta_bort = index
+
+    if bild_som_ska_ta_bort is not None:
+        st.session_state.uploaded_images.pop(bild_som_ska_ta_bort)
+        st.rerun()
 
     st.session_state.uploaded_images.sort(key=lambda x: x["order"])
 
+    st.write("")
     if st.button("❌ Rensa alla bilder"):
         st.session_state.uploaded_images = []
         st.rerun()
@@ -230,7 +239,6 @@ class JimotecPDF(FPDF):
 
 
 def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_list, bild_lista, sprak="sv"):
-    # Språk-översättning av mallrubriker
     is_en = (sprak == "en")
     
     t_rubrik = "MEETING MINUTES" if is_en else "MÖTESPROTOKOLL"
@@ -246,7 +254,6 @@ def generera_pdf_jimotec(d_tid, frtg, plts, deltag, md_text, atgarder_list, bild
     t_ans = "RESPONSIBLE" if is_en else "ANSVARIG"
     t_klar = "DUE DATE" if is_en else "KLAR SENAST"
 
-    # Om engelska, översätt dynamically innehållet
     if is_en:
         d_tid = oversatt_till_engelska(d_tid)
         frtg = oversatt_till_engelska(frtg)

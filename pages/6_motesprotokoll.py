@@ -326,13 +326,10 @@ def generera_pdf_jimotec(
             return ""
         return str(t).encode("latin-1", "replace").decode("latin-1")
 
-    # Om engelska är valt, översätt texterna automatiskt
+    # Om engelska är valt, översätt minnesanteckningar och plats automatiskt
     if is_en and TRANSLATOR_AVAILABLE:
         md_text = oversatt_text(md_text, "en")
         plts = oversatt_text(plts, "en")
-        for item in atgarder_list:
-            item = dict(item)
-            item["aktivitet"] = oversatt_text(item["aktivitet"], "en")
 
     # Labels baserade på språk
     lbl_date = "DATE & TIME:" if is_en else "DATUM & TID:"
@@ -544,7 +541,8 @@ with col_pdf2:
         else:
             try:
                 with st.spinner(
-                    "Översätter och genererar engelsk PDF..."
+                    "Översätter minnesanteckningar och genererar engelsk"
+                    " PDF..."
                 ):
                     pdf_data = generera_pdf_jimotec(
                         datum_tid,

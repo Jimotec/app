@@ -40,6 +40,9 @@ if "atgarder_lista" not in st.session_state:
 if "markdown_text" not in st.session_state:
     st.session_state.markdown_text = ""
 
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
+
 
 # --- SEKTION: ÖVERSÄTTNINGSFUNKTION ---
 def oversatt_till_engelska(text):
@@ -122,6 +125,7 @@ ny_filer = st.file_uploader(
     "Ladda upp bilder till protokollet:",
     type=["jpg", "jpeg", "png"],
     accept_multiple_files=True,
+    key=f"file_uploader_{st.session_state.uploader_key}"
 )
 
 if ny_filer:
@@ -162,6 +166,7 @@ if st.session_state.uploaded_images:
 
     if bild_som_ska_ta_bort is not None:
         st.session_state.uploaded_images.pop(bild_som_ska_ta_bort)
+        st.session_state.uploader_key += 1
         st.rerun()
 
     st.session_state.uploaded_images.sort(key=lambda x: x["order"])
@@ -169,6 +174,7 @@ if st.session_state.uploaded_images:
     st.write("")
     if st.button("❌ Rensa alla bilder"):
         st.session_state.uploaded_images = []
+        st.session_state.uploader_key += 1
         st.rerun()
 
 st.divider()

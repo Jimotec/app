@@ -46,6 +46,9 @@ if "atgarder_lista" not in st.session_state:
         "datum": date.today() + timedelta(days=7),
     }]
 
+if "markdown_text_val" not in st.session_state:
+    st.session_state.markdown_text_val = ""
+
 
 def oversatt_text(text, target="en"):
     """Hjälpfunktion för att översätta text till engelska."""
@@ -78,11 +81,14 @@ with col_info2:
 st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
     "Minnesanteckningar:",
+    value=st.session_state.markdown_text_val,
     height=200,
+    key="markdown_text_input",
     placeholder="""1. Fel stift
 2. Smeda
 """,
 )
+st.session_state.markdown_text_val = markdown_text
 
 st.subheader("3. Åtgärdslista (Rutor för Ansvarig & Datum)")
 
@@ -184,9 +190,8 @@ if st.session_state.uploaded_images:
 st.divider()
 
 
-# --- SEKTION 3: FUNKTIONER FÖR OUTLOOK EXPORT (UPPGIFTER / TASKS) ---
+# --- SEKTION 3: FUNKTIONER FÖR OUTLOOK EXPORT ---
 def generera_outlook_ics_tasks(atgarder_list, frtg, is_en=False):
-    """Genererar en .ics-fil med VTODO-komponenter för Outlook Uppgifter."""
     aktiva_atgarder = [a for a in atgarder_list if a["aktivitet"].strip()]
     if not aktiva_atgarder:
         return None
@@ -203,20 +208,14 @@ def generera_outlook_ics_tasks(atgarder_list, frtg, is_en=False):
 
     for idx, item in enumerate(aktiva_atgarder, 1):
         due_date = item["datum"].strftime("%Y%m%d")
-        akt_text = (
-            oversatt_text(item["aktivitet"], "en")
-            if is_en
-            else item["aktivitet"]
-        )
-        summary = f"{prefix} {akt_text}"
-
+        summary = f"{prefix} {item['aktivitet']}"
         lbl_ans = "Assignee" if is_en else "Ansvarig"
         lbl_due = "Due Date" if is_en else "Klar senast"
         lbl_mtg = "Meeting for" if is_en else "Kopplat till möte för"
 
         description = (
-            f"Activity: {akt_text}\\n{lbl_ans}: {item['ansvarig']}\\n{lbl_due}:"
-            f" {item['datum']}\\n{lbl_mtg}: {frtg}"
+            f"Activity: {item['aktivitet']}\\n{lbl_ans}:"
+            f" {item['ansvarig']}\\n{lbl_due}: {item['datum']}\\n{lbl_mtg}: {frtg}"
         )
 
         ics_lines.extend([
@@ -235,7 +234,6 @@ def generera_outlook_ics_tasks(atgarder_list, frtg, is_en=False):
 
 
 def generera_outlook_csv(atgarder_list, frtg, is_en=False):
-    """Genererar en CSV-fil redo för direktimport till Outlooks Uppgiftsmapp."""
     import csv
     import io
 
@@ -252,12 +250,7 @@ def generera_outlook_csv(atgarder_list, frtg, is_en=False):
     lbl_mtg = "Meeting for" if is_en else "Kopplat till möte för"
 
     for item in aktiva_atgarder:
-        akt_text = (
-            oversatt_text(item["aktivitet"], "en")
-            if is_en
-            else item["aktivitet"]
-        )
-        subject = f"{prefix} {akt_text}"
+        subject = f"{prefix} {item['aktivitet']}"
         due_date = item["datum"].strftime("%Y-%m-%d")
         body = f"{lbl_ans}: {item['ansvarig']}\n{lbl_mtg}: {frtg}"
         writer.writerow([subject, due_date, body, "Normal"])
@@ -326,12 +319,6 @@ def generera_pdf_jimotec(
             return ""
         return str(t).encode("latin-1", "replace").decode("latin-1")
 
-    # Om engelska är valt, översätt minnesanteckningar och plats automatiskt
-    if is_en and TRANSLATOR_AVAILABLE:
-        md_text = oversatt_text(md_text, "en")
-        plts = oversatt_text(plts, "en")
-
-    # Labels baserade på språk
     lbl_date = "DATE & TIME:" if is_en else "DATUM & TID:"
     lbl_comp = "COMPANY:" if is_en else "FÖRETAG:"
     lbl_loc = "LOCATION:" if is_en else "PLATS:"
@@ -473,14 +460,9 @@ def generera_pdf_jimotec(
 
         aktiva_atgarder = [a for a in atgarder_list if a["aktivitet"].strip()]
         for idx, item in enumerate(aktiva_atgarder, 1):
-            akt_str = (
-                oversatt_text(item["aktivitet"], "en")
-                if is_en
-                else item["aktivitet"]
-            )
             pdf.set_x(10)
             pdf.cell(12, 6, str(idx), border=1, align="C")
-            pdf.cell(90, 6, clean_txt(akt_str[:50]), border=1)
+            pdf.cell(90, 6, clean_txt(item["aktivitet"][:50]), border=1)
             pdf.cell(45, 6, clean_txt(item["ansvarig"][:22]), border=1)
             pdf.cell(43, 6, str(item["datum"]), border=1, ln=True)
 
@@ -533,28 +515,44 @@ with col_pdf1:
                 st.error(f"❌ Ett fel uppstod vid skapandet av PDF: {e}")
 
 with col_pdf2:
-    if st.button("🇬🇧 Generera PDF (Engelska)", use_container_width=True):
+    if st.button(
+        "🇬🇧 Översätt fält & Generera Engelskt PDF", use_container_width=True
+    ):
         if not markdown_text.strip():
             st.warning(
                 "⚠️ Du måste fylla i protokolltexten innan du skapar PDF:en."
             )
         else:
             try:
-                with st.spinner(
-                    "Översätter minnesanteckningar och genererar engelsk"
-                    " PDF..."
-                ):
+                with st.spinner("Översätter alla textfält till engelska..."):
+                    # Översätt minnesanteckningarna i fältet
+                    st.session_state.markdown_text_val = oversatt_text(
+                        markdown_text, "en"
+                    )
+
+                    # Översätt alla åtgärder i rutorna
+                    for item in st.session_state.atgarder_lista:
+                        if item["aktivitet"]:
+                            item["aktivitet"] = oversatt_text(
+                                item["aktivitet"], "en"
+                            )
+
+                    # Generera PDF med de nya engelska texterna
                     pdf_data = generera_pdf_jimotec(
                         datum_tid,
                         foretag,
-                        plats,
+                        oversatt_text(plats, "en"),
                         deltagare,
-                        markdown_text,
+                        st.session_state.markdown_text_val,
                         st.session_state.atgarder_lista,
                         st.session_state.uploaded_images,
                         is_en=True,
                     )
-                st.success("✅ Engelskt PDF-protokoll skapat!")
+
+                st.success(
+                    "✅ Texten har översatts och Engelskt PDF-protokoll har"
+                    " skapats!"
+                )
                 st.download_button(
                     label="📥 Ladda ned Engelsk PDF",
                     data=pdf_data,

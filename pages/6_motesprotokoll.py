@@ -9,12 +9,22 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# CSS för att dölja sidonavigering samt göra ramen runt sektion 5 kraftig
+# CSS för dölja sidonavigering, blå avskiljande linje och kraftig ram
 st.markdown(
     """
     <style>
         [data-testid="stSidebarNav"] {display: none;}
         
+        /* Blå avskiljande linje ovanför sektion 5 */
+        hr.blue-divider {
+            border: 0;
+            height: 4px;
+            background-color: #0284c7;
+            border-radius: 2px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
         /* Kraftig ram och ljus bakgrund runt hela sektion 5-containern */
         div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) {
             background-color: #f0f9ff !important;
@@ -244,7 +254,9 @@ if st.session_state.uploaded_images:
         st.session_state.uploaded_images = []
         st.rerun()
 
-st.divider()
+
+# --- GROV BLÅ LINJE SOM AVSKILJER DOKUMENTET FRÅN KNAPPARNA ---
+st.markdown('<hr class="blue-divider">', unsafe_allow_html=True)
 
 
 # --- SEKTION 3: FUNKTIONER FÖR EXPORT ---
@@ -605,14 +617,19 @@ with st.container(border=True):
 
             if "datum_tid" in data:
                 st.session_state.datum_tid_val = data["datum_tid"]
+                st.session_state.datum_tid_input = data["datum_tid"]
             if "foretag" in data:
                 st.session_state.foretag_val = data["foretag"]
+                st.session_state.foretag_input = data["foretag"]
             if "plats" in data:
                 st.session_state.plats_val = data["plats"]
+                st.session_state.plats_input = data["plats"]
             if "deltagare" in data:
                 st.session_state.deltagare_val = data["deltagare"]
+                st.session_state.deltagare_input = data["deltagare"]
             if "markdown_text" in data:
                 st.session_state.markdown_text_val = data["markdown_text"]
+                st.session_state.markdown_text_area = data["markdown_text"]
 
             if "atgarder" in data and isinstance(data["atgarder"], list):
                 nya_atgarder = []
@@ -746,6 +763,7 @@ with st.container(border=True):
 
     with c5:
         if st.button("🗑️ Töm formulär", type="primary", key="btn_clear_all"):
+            # Nollställ session state-värden
             st.session_state.markdown_text_val = ""
             st.session_state.datum_tid_val = ""
             st.session_state.foretag_val = ""
@@ -757,4 +775,26 @@ with st.container(border=True):
                 "ansvarig": "",
                 "datum": date.today() + timedelta(days=7),
             }]
+
+            # Nollställ direkta widget-nycklar så alla textfält töms i gränssnittet
+            if "datum_tid_input" in st.session_state:
+                st.session_state.datum_tid_input = ""
+            if "foretag_input" in st.session_state:
+                st.session_state.foretag_input = ""
+            if "plats_input" in st.session_state:
+                st.session_state.plats_input = ""
+            if "deltagare_input" in st.session_state:
+                st.session_state.deltagare_input = ""
+            if "markdown_text_area" in st.session_state:
+                st.session_state.markdown_text_area = ""
+
+            # Nollställ dynamiska åtgärdsnycklar
+            for key in list(st.session_state.keys()):
+                if (
+                    key.startswith("akt_")
+                    or key.startswith("ans_")
+                    or key.startswith("dat_")
+                ):
+                    del st.session_state[key]
+
             st.rerun()

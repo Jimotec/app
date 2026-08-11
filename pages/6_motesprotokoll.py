@@ -9,20 +9,27 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# CSS för att dölja sidonavigering, göra den blå randen mycket bredare samt forma ramen
+# CSS för dölja sidonavigering och skapa ett maffigt blått avskiljande band
 st.markdown(
     """
     <style>
         [data-testid="stSidebarNav"] {display: none;}
         
-        /* Mycket bredare och tydlig blå rand ovanför sektion 5 */
-        hr.blue-divider {
-            border: 0;
-            height: 12px;
-            background-color: #0284c7;
-            border-radius: 6px;
-            margin-top: 40px;
-            margin-bottom: 40px;
+        /* Ett tjockt blått band med 5 interna linjer som avskiljer dokumentet från sektion 5 */
+        div.blue-thick-band {
+            background-color: #0284c7 !important;
+            height: 18px !important;
+            border-radius: 6px !important;
+            margin-top: 35px !important;
+            margin-bottom: 35px !important;
+            box-shadow: inset 0 2px 0 #38bdf8, inset 0 -2px 0 #0369a1, 0 2px 4px rgba(0,0,0,0.1);
+            background-image: repeating-linear-gradient(
+                0deg,
+                #0284c7,
+                #0284c7 2px,
+                #38bdf8 2px,
+                #38bdf8 4px
+            ) !important;
         }
 
         /* Kraftig ram och ljus bakgrund runt hela sektion 5-containern */
@@ -280,8 +287,8 @@ if st.session_state.uploaded_images:
         st.rerun()
 
 
-# --- GROV BLÅ RAND SOM AVSKILJER DOKUMENTET FRÅN KNAPPARNA ---
-st.markdown('<hr class="blue-divider">', unsafe_allow_html=True)
+# --- REJÄLT BLÅTT AVSKILJANDE BAND FÖR ATT SEKTIONERA SIDAN ---
+st.markdown('<div class="blue-thick-band"></div>', unsafe_allow_html=True)
 
 
 # --- SEKTION 3: FUNKTIONER FÖR EXPORT ---

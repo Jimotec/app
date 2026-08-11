@@ -9,16 +9,38 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# Döljer automatiska listan i sidopanelen samt sätter maxbredd på knappar (~3 cm)
+# Anpassad CSS för färgade knappar och layout
 st.markdown(
     """
     <style>
         [data-testid="stSidebarNav"] {display: none;}
         
-        /* Gör alla vanliga st.button max ca 130px breda */
+        /* Gör alla vanliga st.button i exportsektionen kompakta */
         div.stButton > button {
-            max-width: 130px !important;
             width: 100% !important;
+            font-weight: bold !important;
+        }
+
+        /* Anpassade färgstilar för knappar */
+        div.btn-sv > button {
+            background-color: #2b6cb0 !important;
+            color: white !important;
+            border: none !important;
+        }
+        div.btn-en > button {
+            background-color: #2c5282 !important;
+            color: white !important;
+            border: none !important;
+        }
+        div.btn-ics > button {
+            background-color: #276749 !important;
+            color: white !important;
+            border: none !important;
+        }
+        div.btn-csv > button {
+            background-color: #d69e2e !important;
+            color: white !important;
+            border: none !important;
         }
     </style>
     """,
@@ -32,8 +54,8 @@ if os.path.exists("app.py"):
 
 st.title("📋 Skapa Mötesprotokoll")
 st.write(
-    "Fyll i mötesinformation, importera färdigt underlag från AI, eller klistra"
-    " in manuellt."
+    "Fyll i mötesinformation, klistra in din text och koppla bilderna direkt till"
+    " punkterna."
 )
 
 
@@ -92,82 +114,6 @@ if "deltagare_val" not in st.session_state:
     st.session_state.deltagare_val = (
         "Torbjörn Karlsson - VD\nMikael Svensson - Projektledare"
     )
-
-# --- SEKTION: INSTRUKTIONER OCH IMPORT FRÅN AI ---
-with st.expander("ℹ️ Klicka här för instruktioner till AI (Kopiera till chatten)"):
-    st.markdown(
-        """
-        **Kopiera texten nedan och klistra in till AI tillsammans med dina anteckningar/bild:**
-        
-        ```text
-        Du är en assistent som tolkar handskrivna mötesanteckningar och skapar en JSON-fil som ska importeras i Streamlit-appen 'Mötesprotokoll - Jimotec'.
-        Generera enbart en nedladdningsbar .json-fil med följande nycklar:
-        {
-          "datum_tid": "YYYY-MM-DD HH:MM",
-          "foretag": "Företagsnamn",
-          "plats": "Plats",
-          "deltagare": "Namn 1 - Roll 1\\nNamn 2 - Roll 2",
-          "markdown_text": "1. Punkt 1\\n2. Punkt 2\\n3. Punkt 3",
-          "atgarder": [
-            {
-              "aktivitet": "Beskrivning av åtgärd",
-              "ansvarig": "Namn",
-              "datum": "YYYY-MM-DD"
-            }
-          ]
-        }
-        VIKTIGT: 
-        1. Alla minnesanteckningar MÅSTE vara numrerade som '1.', '2.', '3.' osv. i markdown_text så att bildkopplingen fungerar.
-        2. Säg alltid till mig att "Ladda ner dina mötesanteckningar" när filen är klar.
-        ```
-        """
-    )
-
-# Filuppladdning för JSON-import
-json_file = st.file_uploader(
-    "📂 Ladda upp sparat protokoll (.json) från AI", type=["json"]
-)
-
-if json_file is not None:
-    try:
-        data = json.load(json_file)
-
-        # Uppdatera session state med data från JSON
-        if "datum_tid" in data:
-            st.session_state.datum_tid_val = data["datum_tid"]
-        if "foretag" in data:
-            st.session_state.foretag_val = data["foretag"]
-        if "plats" in data:
-            st.session_state.plats_val = data["plats"]
-        if "deltagare" in data:
-            st.session_state.deltagare_val = data["deltagare"]
-        if "markdown_text" in data:
-            st.session_state.markdown_text_val = data["markdown_text"]
-
-        if "atgarder" in data and isinstance(data["atgarder"], list):
-            nya_atgarder = []
-            for a in data["atgarder"]:
-                d_val = date.today() + timedelta(days=7)
-                if "datum" in a and a["datum"]:
-                    try:
-                        d_val = datetime.strptime(
-                            a["datum"], "%Y-%m-%d"
-                        ).date()
-                    except Exception:
-                        pass
-                nya_atgarder.append({
-                    "aktivitet": a.get("aktivitet", ""),
-                    "ansvarig": a.get("ansvarig", "Torbjörn"),
-                    "datum": d_val,
-                })
-            if nya_atgarder:
-                st.session_state.atgarder_lista = nya_atgarder
-
-        st.success("✅ Data importerades från JSON-filen!")
-    except Exception as e:
-        st.error(f"❌ Fel vid läsning av JSON-fil: {e}")
-
-st.divider()
 
 # --- SEKTION 1: MÖTESINFO & TEXTINPUT ---
 st.subheader("1. Mötesinformation")
@@ -625,13 +571,89 @@ def generera_pdf_jimotec(
     return pdf_bytes
 
 
-# --- SEKTION 5: SKAPA & EXPORTERA (SAMMAnFÖRD PÅ EN RAD LÄNGST NER) ---
-st.subheader("5. Skapa & Exportera")
+# --- SEKTION 5: SKAPA, IMPORTERA & EXPORTERA (ALLA KNAPPAR LÄNGST NER) ---
+st.subheader("5. Skapa, Importera & Exportera")
 
+# Rad 1: AI-Instruktioner och JSON-importör
+with st.expander("ℹ️ Klicka här för instruktioner till AI (Kopiera till chatten)"):
+    st.markdown(
+        """
+        **Kopiera texten nedan och klistra in till AI tillsammans med dina anteckningar/bild:**
+        
+        ```text
+        Du är en assistent som tolkar handskrivna mötesanteckningar och skapar en JSON-fil som ska importeras i Streamlit-appen 'Mötesprotokoll - Jimotec'.
+        Generera enbart en nedladdningsbar .json-fil med följande nycklar:
+        {
+          "datum_tid": "YYYY-MM-DD HH:MM",
+          "foretag": "Företagsnamn",
+          "plats": "Plats",
+          "deltagare": "Namn 1 - Roll 1\\nNamn 2 - Roll 2",
+          "markdown_text": "1. Punkt 1\\n2. Punkt 2\\n3. Punkt 3",
+          "atgarder": [
+            {
+              "aktivitet": "Beskrivning av åtgärd",
+              "ansvarig": "Namn",
+              "datum": "YYYY-MM-DD"
+            }
+          ]
+        }
+        VIKTIGT: 
+        1. Alla minnesanteckningar MÅSTE vara numrerade som '1.', '2.', '3.' osv. i markdown_text så att bildkopplingen fungerar.
+        2. Säg alltid till mig att "Ladda ner dina mötesanteckningar" när filen är klar.
+        ```
+        """
+    )
+
+json_file = st.file_uploader(
+    "📂 Ladda upp sparat protokoll (.json) från AI", type=["json"]
+)
+
+if json_file is not None:
+    try:
+        data = json.load(json_file)
+
+        if "datum_tid" in data:
+            st.session_state.datum_tid_val = data["datum_tid"]
+        if "foretag" in data:
+            st.session_state.foretag_val = data["foretag"]
+        if "plats" in data:
+            st.session_state.plats_val = data["plats"]
+        if "deltagare" in data:
+            st.session_state.deltagare_val = data["deltagare"]
+        if "markdown_text" in data:
+            st.session_state.markdown_text_val = data["markdown_text"]
+
+        if "atgarder" in data and isinstance(data["atgarder"], list):
+            nya_atgarder = []
+            for a in data["atgarder"]:
+                d_val = date.today() + timedelta(days=7)
+                if "datum" in a and a["datum"]:
+                    try:
+                        d_val = datetime.strptime(
+                            a["datum"], "%Y-%m-%d"
+                        ).date()
+                    except Exception:
+                        pass
+                nya_atgarder.append({
+                    "aktivitet": a.get("aktivitet", ""),
+                    "ansvarig": a.get("ansvarig", "Torbjörn"),
+                    "datum": d_val,
+                })
+            if nya_atgarder:
+                st.session_state.atgarder_lista = nya_atgarder
+
+        st.success("✅ Data importerades från JSON-filen!")
+    except Exception as e:
+        st.error(f"❌ Fel vid läsning av JSON-fil: {e}")
+
+st.write("")
+
+# Rad 2: Färgade exportknappar på en samlad rad
 c1, c2, c3, c4 = st.columns(4)
 
 with c1:
-    if st.button("🇸🇪 PDF (SV)", type="primary"):
+    st.markdown('<div class="btn-sv">', unsafe_allow_html=True)
+    if st.button("🇸🇪 Skapa PDF (SV)"):
         if not markdown_text.strip():
             st.warning("⚠️ Fyll i protokolltexten först.")
         else:
@@ -647,16 +669,18 @@ with c1:
                     is_en=False,
                 )
                 st.download_button(
-                    label="📥 Hämta SV",
+                    label="📥 Hämta SV PDF",
                     data=pdf_data,
                     file_name="Motesprotokoll_Jimotec_SV.pdf",
                     mime="application/pdf",
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with c2:
-    if st.button("🇬🇧 PDF (EN)", type="secondary"):
+    st.markdown('<div class="btn-en">', unsafe_allow_html=True)
+    if st.button("🇬🇧 Skapa PDF (EN)"):
         if not markdown_text.strip():
             st.warning("⚠️ Fyll i protokolltexten först.")
         else:
@@ -682,16 +706,18 @@ with c2:
                         is_en=True,
                     )
                 st.download_button(
-                    label="📥 Hämta EN",
+                    label="📥 Hämta EN PDF",
                     data=pdf_data,
                     file_name="Meeting_Minutes_Jimotec_EN.pdf",
                     mime="application/pdf",
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with c3:
-    if st.button("📋 ICS (Task)"):
+    st.markdown('<div class="btn-ics">', unsafe_allow_html=True)
+    if st.button("📋 ICS Uppgifter"):
         har_atgarder = any(
             a["aktivitet"].strip() for a in st.session_state.atgarder_lista
         )
@@ -710,9 +736,11 @@ with c3:
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with c4:
-    if st.button("📊 CSV (Outlook)"):
+    st.markdown('<div class="btn-csv">', unsafe_allow_html=True)
+    if st.button("📊 CSV Outlook"):
         har_atgarder = any(
             a["aktivitet"].strip() for a in st.session_state.atgarder_lista
         )
@@ -731,3 +759,4 @@ with c4:
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)

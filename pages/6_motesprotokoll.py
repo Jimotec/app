@@ -9,60 +9,59 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# CSS för att dölja sidonavigering samt skapa den ljusblå sektionen med färgade knappar
+# CSS för att dölja sidonavigering, färglägga containern samt knapparna
 st.markdown(
     """
     <style>
         [data-testid="stSidebarNav"] {display: none;}
         
-        /* Ljusblå bakgrund på sektion 5 */
-        div.export-box {
+        /* Gör hela sektion 5-containern ljusblå */
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) {
             background-color: #e0f2fe !important;
-            padding: 20px !important;
+            padding: 24px !important;
             border-radius: 12px !important;
             border: 1px solid #bae6fd !important;
-            margin-top: 10px !important;
-            margin-bottom: 20px !important;
         }
 
-        /* Tvinga färgade knappar i exportboxen */
-        div.export-box button[data-testid="baseButton-secondary"] {
+        /* Knapparnas gemensamma grundstil */
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) button {
+            width: 100% !important;
+            font-weight: bold !important;
+            height: 45px !important;
             color: white !important;
             border: none !important;
-            font-weight: bold !important;
-            height: 42px !important;
-            width: 100% !important;
+            border-radius: 8px !important;
         }
 
-        /* Svensk PDF - Mörkblå */
-        div.export-box div[data-testid="column"]:nth-child(1) button {
+        /* Knapp 1: Svensk PDF - Mörkblå */
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(1) button {
             background-color: #0284c7 !important;
         }
-        div.export-box div[data-testid="column"]:nth-child(1) button:hover {
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(1) button:hover {
             background-color: #0369a1 !important;
         }
 
-        /* Engelsk PDF - Lila */
-        div.export-box div[data-testid="column"]:nth-child(2) button {
+        /* Knapp 2: Engelsk PDF - Lila */
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(2) button {
             background-color: #6366f1 !important;
         }
-        div.export-box div[data-testid="column"]:nth-child(2) button:hover {
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(2) button:hover {
             background-color: #4f46e5 !important;
         }
 
-        /* ICS Uppgift - Grön */
-        div.export-box div[data-testid="column"]:nth-child(3) button {
+        /* Knapp 3: ICS Uppgift - Grön */
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(3) button {
             background-color: #16a34a !important;
         }
-        div.export-box div[data-testid="column"]:nth-child(3) button:hover {
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(3) button:hover {
             background-color: #15803d !important;
         }
 
-        /* CSV Outlook - Orange */
-        div.export-box div[data-testid="column"]:nth-child(4) button {
+        /* Knapp 4: CSV Outlook - Orange */
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(4) button {
             background-color: #ea580c !important;
         }
-        div.export-box div[data-testid="column"]:nth-child(4) button:hover {
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(4) button:hover {
             background-color: #c2410c !important;
         }
     </style>
@@ -594,190 +593,189 @@ def generera_pdf_jimotec(
     return pdf_bytes
 
 
-# --- SEKTION 5: SKAPA, IMPORTERA & EXPORTERA (LJUSBLÅ CONTAINER LÄNGST NER) ---
+# --- SEKTION 5: SKAPA, IMPORTERA & EXPORTERA (HELA SEKTIONEN LJUSBLÅ) ---
 st.subheader("5. Skapa, Importera & Exportera")
 
-# Start på den ljusblå containern
-st.markdown('<div class="export-box">', unsafe_allow_html=True)
+# Vi omsluter hela sektionen i en st.container med border=True
+with st.container(border=True):
+    # Dold markör som gör att CSS hittar och färglägger hela denna container
+    st.markdown('<div class="export-marker"></div>', unsafe_allow_html=True)
 
-# AI-Instruktioner och JSON-importör
-with st.expander("ℹ️ Klicka här för instruktioner till AI (Kopiera till chatten)"):
-    st.markdown(
-        """
-        **Kopiera texten nedan och klistra in till AI tillsammans med dina anteckningar/bild:**
-        
-        ```text
-        Du är en assistent som tolkar handskrivna mötesanteckningar och skapar en JSON-fil som ska importeras i Streamlit-appen 'Mötesprotokoll - Jimotec'.
-        Generera enbart en nedladdningsbar .json-fil med följande nycklar:
-        {
-          "datum_tid": "YYYY-MM-DD HH:MM",
-          "foretag": "Företagsnamn",
-          "plats": "Plats",
-          "deltagare": "Namn 1 - Roll 1\\nNamn 2 - Roll 2",
-          "markdown_text": "1. Punkt 1\\n2. Punkt 2\\n3. Punkt 3",
-          "atgarder": [
+    # AI-Instruktioner och JSON-importör
+    with st.expander("ℹ️ Klicka här för instruktioner till AI (Kopiera till chatten)"):
+        st.markdown(
+            """
+            **Kopiera texten nedan och klistra in till AI tillsammans med dina anteckningar/bild:**
+            
+            ```text
+            Du är en assistent som tolkar handskrivna mötesanteckningar och skapar en JSON-fil som ska importeras i Streamlit-appen 'Mötesprotokoll - Jimotec'.
+            Generera enbart en nedladdningsbar .json-fil med följande nycklar:
             {
-              "aktivitet": "Beskrivning av åtgärd",
-              "ansvarig": "Namn",
-              "datum": "YYYY-MM-DD"
+              "datum_tid": "YYYY-MM-DD HH:MM",
+              "foretag": "Företagsnamn",
+              "plats": "Plats",
+              "deltagare": "Namn 1 - Roll 1\\nNamn 2 - Roll 2",
+              "markdown_text": "1. Punkt 1\\n2. Punkt 2\\n3. Punkt 3",
+              "atgarder": [
+                {
+                  "aktivitet": "Beskrivning av åtgärd",
+                  "ansvarig": "Namn",
+                  "datum": "YYYY-MM-DD"
+                }
+              ]
             }
-          ]
-        }
-        VIKTIGT: 
-        1. Alla minnesanteckningar MÅSTE vara numrerade som '1.', '2.', '3.' osv. i markdown_text så att bildkopplingen fungerar.
-        2. Säg alltid till mig att "Ladda ner dina mötesanteckningar" när filen är klar.
-        ```
-        """
+            VIKTIGT: 
+            1. Alla minnesanteckningar MÅSTE vara numrerade som '1.', '2.', '3.' osv. i markdown_text så att bildkopplingen fungerar.
+            2. Säg alltid till mig att "Ladda ner dina mötesanteckningar" när filen är klar.
+            ```
+            """
+        )
+
+    json_file = st.file_uploader(
+        "📂 Ladda upp sparat protokoll (.json) från AI", type=["json"]
     )
 
-json_file = st.file_uploader(
-    "📂 Ladda upp sparat protokoll (.json) från AI", type=["json"]
-)
+    if json_file is not None:
+        try:
+            data = json.load(json_file)
 
-if json_file is not None:
-    try:
-        data = json.load(json_file)
+            if "datum_tid" in data:
+                st.session_state.datum_tid_val = data["datum_tid"]
+            if "foretag" in data:
+                st.session_state.foretag_val = data["foretag"]
+            if "plats" in data:
+                st.session_state.plats_val = data["plats"]
+            if "deltagare" in data:
+                st.session_state.deltagare_val = data["deltagare"]
+            if "markdown_text" in data:
+                st.session_state.markdown_text_val = data["markdown_text"]
 
-        if "datum_tid" in data:
-            st.session_state.datum_tid_val = data["datum_tid"]
-        if "foretag" in data:
-            st.session_state.foretag_val = data["foretag"]
-        if "plats" in data:
-            st.session_state.plats_val = data["plats"]
-        if "deltagare" in data:
-            st.session_state.deltagare_val = data["deltagare"]
-        if "markdown_text" in data:
-            st.session_state.markdown_text_val = data["markdown_text"]
+            if "atgarder" in data and isinstance(data["atgarder"], list):
+                nya_atgarder = []
+                for a in data["atgarder"]:
+                    d_val = date.today() + timedelta(days=7)
+                    if "datum" in a and a["datum"]:
+                        try:
+                            d_val = datetime.strptime(
+                                a["datum"], "%Y-%m-%d"
+                            ).date()
+                        except Exception:
+                            pass
+                    nya_atgarder.append({
+                        "aktivitet": a.get("aktivitet", ""),
+                        "ansvarig": a.get("ansvarig", "Torbjörn"),
+                        "datum": d_val,
+                    })
+                if nya_atgarder:
+                    st.session_state.atgarder_lista = nya_atgarder
 
-        if "atgarder" in data and isinstance(data["atgarder"], list):
-            nya_atgarder = []
-            for a in data["atgarder"]:
-                d_val = date.today() + timedelta(days=7)
-                if "datum" in a and a["datum"]:
-                    try:
-                        d_val = datetime.strptime(
-                            a["datum"], "%Y-%m-%d"
-                        ).date()
-                    except Exception:
-                        pass
-                nya_atgarder.append({
-                    "aktivitet": a.get("aktivitet", ""),
-                    "ansvarig": a.get("ansvarig", "Torbjörn"),
-                    "datum": d_val,
-                })
-            if nya_atgarder:
-                st.session_state.atgarder_lista = nya_atgarder
+            st.success("✅ Data importerades från JSON-filen!")
+        except Exception as e:
+            st.error(f"❌ Fel vid läsning av JSON-fil: {e}")
 
-        st.success("✅ Data importerades från JSON-filen!")
-    except Exception as e:
-        st.error(f"❌ Fel vid läsning av JSON-fil: {e}")
+    st.write("")
 
-st.write("")
+    # Färgade knappar på en samlad rad
+    c1, c2, c3, c4 = st.columns(4)
 
-# 4 färgade exportknappar på en samlad rad
-c1, c2, c3, c4 = st.columns(4)
-
-with c1:
-    if st.button("🇸🇪 Skapa PDF (SV)", key="btn_pdf_sv"):
-        if not markdown_text.strip():
-            st.warning("⚠️ Fyll i protokolltexten först.")
-        else:
-            try:
-                pdf_data = generera_pdf_jimotec(
-                    datum_tid,
-                    foretag,
-                    plats,
-                    deltagare,
-                    markdown_text,
-                    st.session_state.atgarder_lista,
-                    st.session_state.uploaded_images,
-                    is_en=False,
-                )
-                st.download_button(
-                    label="📥 Hämta SV PDF",
-                    data=pdf_data,
-                    file_name="Motesprotokoll_Jimotec_SV.pdf",
-                    mime="application/pdf",
-                )
-            except Exception as e:
-                st.error(f"❌ Fel: {e}")
-
-with c2:
-    if st.button("🇬🇧 Skapa PDF (EN)", key="btn_pdf_en"):
-        if not markdown_text.strip():
-            st.warning("⚠️ Fyll i protokolltexten först.")
-        else:
-            try:
-                with st.spinner("Översätter..."):
-                    st.session_state.markdown_text_val = oversatt_text(
-                        markdown_text, "en"
-                    )
-                    for item in st.session_state.atgarder_lista:
-                        if item["aktivitet"]:
-                            item["aktivitet"] = oversatt_text(
-                                item["aktivitet"], "en"
-                            )
-
+    with c1:
+        if st.button("🇸🇪 Skapa PDF (SV)", key="btn_pdf_sv"):
+            if not markdown_text.strip():
+                st.warning("⚠️ Fyll i protokolltexten först.")
+            else:
+                try:
                     pdf_data = generera_pdf_jimotec(
                         datum_tid,
                         foretag,
                         plats,
                         deltagare,
-                        st.session_state.markdown_text_val,
+                        markdown_text,
                         st.session_state.atgarder_lista,
                         st.session_state.uploaded_images,
-                        is_en=True,
+                        is_en=False,
                     )
-                st.download_button(
-                    label="📥 Hämta EN PDF",
-                    data=pdf_data,
-                    file_name="Meeting_Minutes_Jimotec_EN.pdf",
-                    mime="application/pdf",
-                )
-            except Exception as e:
-                st.error(f"❌ Fel: {e}")
+                    st.download_button(
+                        label="📥 Hämta SV PDF",
+                        data=pdf_data,
+                        file_name="Motesprotokoll_Jimotec_SV.pdf",
+                        mime="application/pdf",
+                    )
+                except Exception as e:
+                    st.error(f"❌ Fel: {e}")
 
-with c3:
-    if st.button("📋 ICS Uppgifter", key="btn_ics"):
-        har_atgarder = any(
-            a["aktivitet"].strip() for a in st.session_state.atgarder_lista
-        )
-        if not har_atgarder:
-            st.warning("⚠️ Ingen aktivitet fylld.")
-        else:
-            try:
-                ics_data = generera_outlook_ics_tasks(
-                    st.session_state.atgarder_lista, foretag, is_en=False
-                )
-                st.download_button(
-                    label="📥 Hämta ICS",
-                    data=ics_data,
-                    file_name="Jimotec_Uppgifter.ics",
-                    mime="text/calendar",
-                )
-            except Exception as e:
-                st.error(f"❌ Fel: {e}")
+    with c2:
+        if st.button("🇬🇧 Skapa PDF (EN)", key="btn_pdf_en"):
+            if not markdown_text.strip():
+                st.warning("⚠️ Fyll i protokolltexten först.")
+            else:
+                try:
+                    with st.spinner("Översätter..."):
+                        st.session_state.markdown_text_val = oversatt_text(
+                            markdown_text, "en"
+                        )
+                        for item in st.session_state.atgarder_lista:
+                            if item["aktivitet"]:
+                                item["aktivitet"] = oversatt_text(
+                                    item["aktivitet"], "en"
+                                )
 
-with c4:
-    if st.button("📊 CSV Outlook", key="btn_csv"):
-        har_atgarder = any(
-            a["aktivitet"].strip() for a in st.session_state.atgarder_lista
-        )
-        if not har_atgarder:
-            st.warning("⚠️ Ingen aktivitet fylld.")
-        else:
-            try:
-                csv_data = generera_outlook_csv(
-                    st.session_state.atgarder_lista, foretag, is_en=False
-                )
-                st.download_button(
-                    label="📥 Hämta CSV",
-                    data=csv_data,
-                    file_name="Jimotec_Uppgifter_Outlook.csv",
-                    mime="text/csv",
-                )
-            except Exception as e:
-                st.error(f"❌ Fel: {e}")
+                        pdf_data = generera_pdf_jimotec(
+                            datum_tid,
+                            foretag,
+                            plats,
+                            deltagare,
+                            st.session_state.markdown_text_val,
+                            st.session_state.atgarder_lista,
+                            st.session_state.uploaded_images,
+                            is_en=True,
+                        )
+                    st.download_button(
+                        label="📥 Hämta EN PDF",
+                        data=pdf_data,
+                        file_name="Meeting_Minutes_Jimotec_EN.pdf",
+                        mime="application/pdf",
+                    )
+                except Exception as e:
+                    st.error(f"❌ Fel: {e}")
 
-# Slut på den ljusblå containern
-st.markdown('</div>', unsafe_allow_html=True)
+    with c3:
+        if st.button("📋 ICS Uppgifter", key="btn_ics"):
+            har_atgarder = any(
+                a["aktivitet"].strip() for a in st.session_state.atgarder_lista
+            )
+            if not har_atgarder:
+                st.warning("⚠️ Ingen aktivitet fylld.")
+            else:
+                try:
+                    ics_data = generera_outlook_ics_tasks(
+                        st.session_state.atgarder_lista, foretag, is_en=False
+                    )
+                    st.download_button(
+                        label="📥 Hämta ICS",
+                        data=ics_data,
+                        file_name="Jimotec_Uppgifter.ics",
+                        mime="text/calendar",
+                    )
+                except Exception as e:
+                    st.error(f"❌ Fel: {e}")
+
+    with c4:
+        if st.button("📊 CSV Outlook", key="btn_csv"):
+            har_atgarder = any(
+                a["aktivitet"].strip() for a in st.session_state.atgarder_lista
+            )
+            if not har_atgarder:
+                st.warning("⚠️ Ingen aktivitet fylld.")
+            else:
+                try:
+                    csv_data = generera_outlook_csv(
+                        st.session_state.atgarder_lista, foretag, is_en=False
+                    )
+                    st.download_button(
+                        label="📥 Hämta CSV",
+                        data=csv_data,
+                        file_name="Jimotec_Uppgifter_Outlook.csv",
+                        mime="text/csv",
+                    )
+                except Exception as e:
+                    st.error(f"❌ Fel: {e}")

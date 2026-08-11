@@ -189,12 +189,12 @@ markdown_text = st.text_area(
 )
 st.session_state.markdown_text_val = markdown_text
 
+# --- SEKTION 3: ÅTGÄRDSLISTA MED OUTLOOK-LÄNKAR ---
 st.subheader("3. Åtgärdslista (Rutor för Ansvarig & Datum)")
 
-# Dynamiska rader för åtgärder
 ny_atgarder = []
 for idx, item in enumerate(st.session_state.atgarder_lista):
-    col_akt, col_ans, col_dat, col_del = st.columns([4, 2, 2, 1])
+    col_akt, col_ans, col_dat, col_link, col_del = st.columns([4, 2, 2, 2, 1])
 
     with col_akt:
         akt_val = st.text_input(
@@ -208,6 +208,18 @@ for idx, item in enumerate(st.session_state.atgarder_lista):
         dat_val = st.date_input(
             f"Klar senast #{idx+1}", value=item["datum"], key=f"dat_{idx}"
         )
+    
+    # Knapp för direktlänk till Outlook / To Do
+    with col_link:
+        st.write("")
+        st.write("")
+        if akt_val.strip():
+            task_title = urllib.parse.quote(f"[Jimotec] {akt_val}")
+            todo_url = f"https://to-do.office.com/tasks/id/add?title={task_title}"
+            st.link_button("➕ Till Outlook", todo_url)
+        else:
+            st.button("➕ Till Outlook", disabled=True, key=f"dis_{idx}")
+
     with col_del:
         st.write("")
         st.write("")

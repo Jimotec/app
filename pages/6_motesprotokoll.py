@@ -97,7 +97,7 @@ if "deltagare_val" not in st.session_state:
 with st.expander("ℹ️ Klicka här för instruktioner till AI (Kopiera till chatten)"):
     st.markdown(
         """
-        **Kopiera texten nedan och klistra in till AI (ChatGPT/Gemini) tillsammans med dina anteckningar/bild:**
+        **Kopiera texten nedan och klistra in till AI tillsammans med dina anteckningar/bild:**
         
         ```text
         Du är en assistent som tolkar handskrivna mötesanteckningar och skapar en JSON-fil som ska importeras i Streamlit-appen 'Mötesprotokoll - Jimotec'.
@@ -116,7 +116,9 @@ with st.expander("ℹ️ Klicka här för instruktioner till AI (Kopiera till ch
             }
           ]
         }
-        VIKTIGT: Alla minnesanteckningar MÅSTE vara numrerade som '1.', '2.', '3.' osv. i markdown_text så att bildkopplingen fungerar.
+        VIKTIGT: 
+        1. Alla minnesanteckningar MÅSTE vara numrerade som '1.', '2.', '3.' osv. i markdown_text så att bildkopplingen fungerar.
+        2. Säg alltid till mig att "Ladda ner dina mötesanteckningar" när filen är klar.
         ```
         """
     )

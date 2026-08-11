@@ -32,8 +32,8 @@ if os.path.exists("app.py"):
 
 st.title("📋 Skapa Mötesprotokoll")
 st.write(
-    "Fyll i mötesinformation, klistra in din text och koppla bilderna direkt till"
-    " punkterna."
+    "Fyll i mötesinformation, importera färdigt underlag från AI, eller klistra"
+    " in manuellt."
 )
 
 
@@ -79,21 +79,126 @@ if "atgarder_lista" not in st.session_state:
 if "markdown_text_val" not in st.session_state:
     st.session_state.markdown_text_val = ""
 
+if "datum_tid_val" not in st.session_state:
+    st.session_state.datum_tid_val = "2026-08-07 10:00"
+
+if "foretag_val" not in st.session_state:
+    st.session_state.foretag_val = "Jimotec AB"
+
+if "plats_val" not in st.session_state:
+    st.session_state.plats_val = "Online / Kontoret"
+
+if "deltagare_val" not in st.session_state:
+    st.session_state.deltagare_val = (
+        "Torbjörn Karlsson - VD\nMikael Svensson - Projektledare"
+    )
+
+# --- SEKTION: INSTRUKTIONER OCH IMPORT FRÅN AI ---
+with st.expander("ℹ️ Klicka här för instruktioner till AI (Kopiera till chatten)"):
+    st.markdown(
+        """
+        **Kopiera texten nedan och klistra in till AI (ChatGPT/Gemini) tillsammans med dina anteckningar/bild:**
+        
+        ```text
+        Du är en assistent som tolkar handskrivna mötesanteckningar och skapar en JSON-fil som ska importeras i Streamlit-appen 'Mötesprotokoll - Jimotec'.
+        Generera enbart en nedladdningsbar .json-fil med följande nycklar:
+        {
+          "datum_tid": "YYYY-MM-DD HH:MM",
+          "foretag": "Företagsnamn",
+          "plats": "Plats",
+          "deltagare": "Namn 1 - Roll 1\\nNamn 2 - Roll 2",
+          "markdown_text": "1. Punkt 1\\n2. Punkt 2\\n3. Punkt 3",
+          "atgarder": [
+            {
+              "aktivitet": "Beskrivning av åtgärd",
+              "ansvarig": "Namn",
+              "datum": "YYYY-MM-DD"
+            }
+          ]
+        }
+        VIKTIGT: Alla minnesanteckningar MÅSTE vara numrerade som '1.', '2.', '3.' osv. i markdown_text så att bildkopplingen fungerar.
+        ```
+        """
+    )
+
+# Filuppladdning för JSON-import
+json_file = st.file_uploader(
+    "📂 Ladda upp sparat protokoll (.json) från AI", type=["json"]
+)
+
+if json_file is not None:
+    try:
+        data = json.load(json_file)
+
+        # Uppdatera session state med data från JSON
+        if "datum_tid" in data:
+            st.session_state.datum_tid_val = data["datum_tid"]
+        if "foretag" in data:
+            st.session_state.foretag_val = data["foretag"]
+        if "plats" in data:
+            st.session_state.plats_val = data["plats"]
+        if "deltagare" in data:
+            st.session_state.deltagare_val = data["deltagare"]
+        if "markdown_text" in data:
+            st.session_state.markdown_text_val = data["markdown_text"]
+
+        if "atgarder" in data and isinstance(data["atgarder"], list):
+            nya_atgarder = []
+            for a in data["atgarder"]:
+                d_val = date.today() + timedelta(days=7)
+                if "datum" in a and a["datum"]:
+                    try:
+                        d_val = datetime.strptime(
+                            a["datum"], "%Y-%m-%d"
+                        ).date()
+                    except Exception:
+                        pass
+                nya_atgarder.append({
+                    "aktivitet": a.get("aktivitet", ""),
+                    "ansvarig": a.get("ansvarig", "Torbjörn"),
+                    "datum": d_val,
+                })
+            if nya_atgarder:
+                st.session_state.atgarder_lista = nya_atgarder
+
+        st.success("✅ Data importerades från JSON-filen!")
+    except Exception as e:
+        st.error(f"❌ Fel vid läsning av JSON-fil: {e}")
+
+st.divider()
+
 # --- SEKTION 1: MÖTESINFO & TEXTINPUT ---
 st.subheader("1. Mötesinformation")
 col_info1, col_info2 = st.columns(2)
 
 with col_info1:
-    datum_tid = st.text_input("Datum & Tid:", value="2026-08-07 10:00")
-    foretag = st.text_input("Företag / Kund:", value="Jimotec AB")
+    datum_tid = st.text_input(
+        "Datum & Tid:",
+        value=st.session_state.datum_tid_val,
+        key="datum_tid_input",
+    )
+    foretag = st.text_input(
+        "Företag / Kund:",
+        value=st.session_state.foretag_val,
+        key="foretag_input",
+    )
 
 with col_info2:
-    plats = st.text_input("Plats:", value="Online / Kontoret")
+    plats = st.text_input(
+        "Plats:", value=st.session_state.plats_val, key="plats_input"
+    )
     deltagare = st.text_area(
         "Deltagare (en per rad):",
-        value="Torbjörn Karlsson - VD\nMikael Svensson - Projektledare",
+        value=st.session_state.deltagare_val,
         height=100,
+        key="deltagare_input",
     )
+
+# Spara värdena tillbaka till session_state
+st.session_state.datum_tid_val = datum_tid
+st.session_state.foretag_val = foretag
+st.session_state.plats_val = plats
+st.session_state.deltagare_val = deltagare
 
 st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
@@ -237,8 +342,8 @@ def generera_outlook_ics_tasks(atgarder_list, frtg, is_en=False):
         lbl_mtg = "Meeting for" if is_en else "Kopplat till möte för"
 
         description = (
-            f"Activity: {akt_text}\\n{lbl_ans}: {item['ansvarig']}\\n{lbl_due}:"
-            f" {item['datum']}\\n{lbl_mtg}: {frtg}"
+            f"Activity: {akt_text}\n{lbl_ans}: {item['ansvarig']}\n{lbl_due}:"
+            f" {item['datum']}\n{lbl_mtg}: {frtg}"
         )
 
         ics_lines.extend([

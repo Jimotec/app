@@ -9,38 +9,52 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# Anpassad CSS för färgade knappar och layout
+# CSS som tvingar knapparna i varje specifik kolumn att få unika färger
 st.markdown(
     """
     <style>
         [data-testid="stSidebarNav"] {display: none;}
         
-        /* Gör alla vanliga st.button i exportsektionen kompakta */
-        div.stButton > button {
+        /* Gör alla knappar i sektion 5 fylliga och stilrena */
+        div[data-testid="column"] button {
             width: 100% !important;
+            border-radius: 8px !important;
             font-weight: bold !important;
+            height: 45px !important;
+            color: white !important;
+            border: none !important;
         }
 
-        /* Anpassade färgstilar för knappar */
-        div.btn-sv > button {
-            background-color: #2b6cb0 !important;
-            color: white !important;
-            border: none !important;
+        /* Kolumn 1: Svensk PDF - Blå */
+        div[data-testid="column"]:nth-child(1) button {
+            background-color: #0056b3 !important;
         }
-        div.btn-en > button {
-            background-color: #2c5282 !important;
-            color: white !important;
-            border: none !important;
+        div[data-testid="column"]:nth-child(1) button:hover {
+            background-color: #003d82 !important;
         }
-        div.btn-ics > button {
-            background-color: #276749 !important;
-            color: white !important;
-            border: none !important;
+
+        /* Kolumn 2: Engelsk PDF - Mörkblå/Lila */
+        div[data-testid="column"]:nth-child(2) button {
+            background-color: #4c51bf !important;
         }
-        div.btn-csv > button {
-            background-color: #d69e2e !important;
-            color: white !important;
-            border: none !important;
+        div[data-testid="column"]:nth-child(2) button:hover {
+            background-color: #3c3699 !important;
+        }
+
+        /* Kolumn 3: ICS Uppgift - Grön */
+        div[data-testid="column"]:nth-child(3) button {
+            background-color: #2e7d32 !important;
+        }
+        div[data-testid="column"]:nth-child(3) button:hover {
+            background-color: #1b5e20 !important;
+        }
+
+        /* Kolumn 4: CSV Outlook - Orange/Guld */
+        div[data-testid="column"]:nth-child(4) button {
+            background-color: #d97706 !important;
+        }
+        div[data-testid="column"]:nth-child(4) button:hover {
+            background-color: #b45309 !important;
         }
     </style>
     """,
@@ -571,7 +585,7 @@ def generera_pdf_jimotec(
     return pdf_bytes
 
 
-# --- SEKTION 5: SKAPA, IMPORTERA & EXPORTERA (ALLA KNAPPAR LÄNGST NER) ---
+# --- SEKTION 5: SKAPA, IMPORTERA & EXPORTERA (LÄNGST NER) ---
 st.subheader("5. Skapa, Importera & Exportera")
 
 # Rad 1: AI-Instruktioner och JSON-importör
@@ -648,11 +662,10 @@ if json_file is not None:
 
 st.write("")
 
-# Rad 2: Färgade exportknappar på en samlad rad
+# Rad 2: Färgade knappar på en samlad rad
 c1, c2, c3, c4 = st.columns(4)
 
 with c1:
-    st.markdown('<div class="btn-sv">', unsafe_allow_html=True)
     if st.button("🇸🇪 Skapa PDF (SV)"):
         if not markdown_text.strip():
             st.warning("⚠️ Fyll i protokolltexten först.")
@@ -676,10 +689,8 @@ with c1:
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with c2:
-    st.markdown('<div class="btn-en">', unsafe_allow_html=True)
     if st.button("🇬🇧 Skapa PDF (EN)"):
         if not markdown_text.strip():
             st.warning("⚠️ Fyll i protokolltexten först.")
@@ -713,10 +724,8 @@ with c2:
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with c3:
-    st.markdown('<div class="btn-ics">', unsafe_allow_html=True)
     if st.button("📋 ICS Uppgifter"):
         har_atgarder = any(
             a["aktivitet"].strip() for a in st.session_state.atgarder_lista
@@ -736,10 +745,8 @@ with c3:
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with c4:
-    st.markdown('<div class="btn-csv">', unsafe_allow_html=True)
     if st.button("📊 CSV Outlook"):
         har_atgarder = any(
             a["aktivitet"].strip() for a in st.session_state.atgarder_lista
@@ -759,4 +766,3 @@ with c4:
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
-    st.markdown('</div>', unsafe_allow_html=True)

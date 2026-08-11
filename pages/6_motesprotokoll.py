@@ -639,11 +639,11 @@ with st.container(border=True):
 
     st.write("")
 
-    # Exportknappar och Töm-knapp på en samlad rad
+    # Röda knappar på en samlad rad
     c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 1])
 
     with c1:
-        if st.button("🇸🇪 Skapa PDF (SV)", key="btn_pdf_sv"):
+        if st.button("🇸🇪 Skapa PDF (SV)", type="primary", key="btn_pdf_sv"):
             if not markdown_text.strip():
                 st.warning("⚠️ Fyll i protokolltexten först.")
             else:
@@ -668,7 +668,7 @@ with st.container(border=True):
                     st.error(f"❌ Fel: {e}")
 
     with c2:
-        if st.button("🇬🇧 Skapa PDF (EN)", key="btn_pdf_en"):
+        if st.button("🇬🇧 Skapa PDF (EN)", type="primary", key="btn_pdf_en"):
             if not markdown_text.strip():
                 st.warning("⚠️ Fyll i protokolltexten först.")
             else:
@@ -703,7 +703,7 @@ with st.container(border=True):
                     st.error(f"❌ Fel: {e}")
 
     with c3:
-        if st.button("📋 ICS Uppgifter", key="btn_ics"):
+        if st.button("📋 ICS Uppgifter", type="primary", key="btn_ics"):
             har_atgarder = any(
                 a["aktivitet"].strip() for a in st.session_state.atgarder_lista
             )
@@ -724,7 +724,7 @@ with st.container(border=True):
                     st.error(f"❌ Fel: {e}")
 
     with c4:
-        if st.button("📊 CSV Outlook", key="btn_csv"):
+        if st.button("📊 CSV Outlook", type="primary", key="btn_csv"):
             har_atgarder = any(
                 a["aktivitet"].strip() for a in st.session_state.atgarder_lista
             )
@@ -745,7 +745,6 @@ with st.container(border=True):
                     st.error(f"❌ Fel: {e}")
 
     with c5:
-        # Knapp för att tömma dokumentet helt
         if st.button("🗑️ Töm formulär", type="primary", key="btn_clear_all"):
             st.session_state.markdown_text_val = ""
             st.session_state.datum_tid_val = ""

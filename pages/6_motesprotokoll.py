@@ -65,7 +65,7 @@ def oversatt_text(text, target="en"):
         return text
 
 
-# --- SESSION STATES ---
+# --- SESSION STATES INITIALISERING ---
 if "uploaded_images" not in st.session_state:
     st.session_state.uploaded_images = []
 
@@ -196,7 +196,6 @@ with col_info2:
         key="deltagare_input",
     )
 
-# Spara värdena tillbaka till session_state
 st.session_state.datum_tid_val = datum_tid
 st.session_state.foretag_val = foretag
 st.session_state.plats_val = plats
@@ -207,7 +206,7 @@ markdown_text = st.text_area(
     "Minnesanteckningar:",
     value=st.session_state.markdown_text_val,
     height=200,
-    key="markdown_text_input",
+    key="markdown_text_area",
     placeholder="""1. Fel stift
 2. Smeda
 """,

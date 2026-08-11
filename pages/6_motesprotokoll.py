@@ -9,51 +9,61 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# CSS för att dölja sidonavigering samt tvinga unika färger på knapparna längst ner
+# CSS för att dölja sidonavigering samt skapa den ljusblå sektionen med färgade knappar
 st.markdown(
     """
     <style>
         [data-testid="stSidebarNav"] {display: none;}
         
-        /* Tvinga unika färger på exporteringsknapparna baserat på key */
-        button[key="btn_pdf_sv"] {
-            background-color: #1e3a8a !important;
-            color: white !important;
-            border-color: #1e3a8a !important;
-        }
-        button[key="btn_pdf_sv"]:hover {
-            background-color: #1e40af !important;
-            color: white !important;
-        }
-
-        button[key="btn_pdf_en"] {
-            background-color: #5b21b6 !important;
-            color: white !important;
-            border-color: #5b21b6 !important;
-        }
-        button[key="btn_pdf_en"]:hover {
-            background-color: #6d28d9 !important;
-            color: white !important;
+        /* Ljusblå bakgrund på sektion 5 */
+        div.export-box {
+            background-color: #e0f2fe !important;
+            padding: 20px !important;
+            border-radius: 12px !important;
+            border: 1px solid #bae6fd !important;
+            margin-top: 10px !important;
+            margin-bottom: 20px !important;
         }
 
-        button[key="btn_ics"] {
+        /* Tvinga färgade knappar i exportboxen */
+        div.export-box button[data-testid="baseButton-secondary"] {
+            color: white !important;
+            border: none !important;
+            font-weight: bold !important;
+            height: 42px !important;
+            width: 100% !important;
+        }
+
+        /* Svensk PDF - Mörkblå */
+        div.export-box div[data-testid="column"]:nth-child(1) button {
+            background-color: #0284c7 !important;
+        }
+        div.export-box div[data-testid="column"]:nth-child(1) button:hover {
+            background-color: #0369a1 !important;
+        }
+
+        /* Engelsk PDF - Lila */
+        div.export-box div[data-testid="column"]:nth-child(2) button {
+            background-color: #6366f1 !important;
+        }
+        div.export-box div[data-testid="column"]:nth-child(2) button:hover {
+            background-color: #4f46e5 !important;
+        }
+
+        /* ICS Uppgift - Grön */
+        div.export-box div[data-testid="column"]:nth-child(3) button {
+            background-color: #16a34a !important;
+        }
+        div.export-box div[data-testid="column"]:nth-child(3) button:hover {
             background-color: #15803d !important;
-            color: white !important;
-            border-color: #15803d !important;
-        }
-        button[key="btn_ics"]:hover {
-            background-color: #166534 !important;
-            color: white !important;
         }
 
-        button[key="btn_csv"] {
-            background-color: #c2410c !important;
-            color: white !important;
-            border-color: #c2410c !important;
+        /* CSV Outlook - Orange */
+        div.export-box div[data-testid="column"]:nth-child(4) button {
+            background-color: #ea580c !important;
         }
-        button[key="btn_csv"]:hover {
-            background-color: #9a3412 !important;
-            color: white !important;
+        div.export-box div[data-testid="column"]:nth-child(4) button:hover {
+            background-color: #c2410c !important;
         }
     </style>
     """,
@@ -584,8 +594,11 @@ def generera_pdf_jimotec(
     return pdf_bytes
 
 
-# --- SEKTION 5: SKAPA, IMPORTERA & EXPORTERA (LÄNGST NER) ---
+# --- SEKTION 5: SKAPA, IMPORTERA & EXPORTERA (LJUSBLÅ CONTAINER LÄNGST NER) ---
 st.subheader("5. Skapa, Importera & Exportera")
+
+# Start på den ljusblå containern
+st.markdown('<div class="export-box">', unsafe_allow_html=True)
 
 # AI-Instruktioner och JSON-importör
 with st.expander("ℹ️ Klicka här för instruktioner till AI (Kopiera till chatten)"):
@@ -661,7 +674,7 @@ if json_file is not None:
 
 st.write("")
 
-# Färgade knappar på en samlad rad med kundanpassade nycklar
+# 4 färgade exportknappar på en samlad rad
 c1, c2, c3, c4 = st.columns(4)
 
 with c1:
@@ -765,3 +778,6 @@ with c4:
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
+
+# Slut på den ljusblå containern
+st.markdown('</div>', unsafe_allow_html=True)

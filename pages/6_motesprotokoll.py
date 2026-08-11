@@ -189,12 +189,31 @@ markdown_text = st.text_area(
 )
 st.session_state.markdown_text_val = markdown_text
 
-# --- SEKTION 3: ÅTGÄRDSLISTA MED OUTLOOK-LÄNKAR ---
+
+# --- SEKTION 3: ÅTGÄRDSLISTA MED OUTLOOK-KNAPP ---
+def skapad_enkelt_ics_objekt(aktivitet_text, ansvarig_namn, forfallo_datum):
+    now = datetime.now().strftime("%Y%m%dT%H%M%SZ")
+    due_date = forfallo_datum.strftime("%Y%m%d")
+    ics_content = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Jimotec AB//Task Generator//SE
+BEGIN:VTODO
+UID:jimotec-task-{now}@jimotec.se
+DTSTAMP:{now}
+SUMMARY:[Åtgärd Jimotec] {aktivitet_text}
+DESCRIPTION:Ansvarig: {ansvarig_namn}\\nKopplat till möte: {st.session_state.foretag_val}
+DUE;VALUE=DATE:{due_date}
+STATUS:NEEDS-ACTION
+END:VTODO
+END:VCALENDAR"""
+    return ics_content.encode("utf-8")
+
+
 st.subheader("3. Åtgärdslista (Rutor för Ansvarig & Datum)")
 
 ny_atgarder = []
 for idx, item in enumerate(st.session_state.atgarder_lista):
-    col_akt, col_ans, col_dat, col_link, col_del = st.columns([4, 2, 2, 2, 1])
+    col_akt, col_ans, col_dat, col_export, col_del = st.columns([4, 2, 2, 2.5, 1])
 
     with col_akt:
         akt_val = st.text_input(
@@ -208,17 +227,21 @@ for idx, item in enumerate(st.session_state.atgarder_lista):
         dat_val = st.date_input(
             f"Klar senast #{idx+1}", value=item["datum"], key=f"dat_{idx}"
         )
-    
-    # Knapp för direktlänk till Outlook / To Do
-    with col_link:
+
+    with col_export:
         st.write("")
         st.write("")
         if akt_val.strip():
-            task_title = urllib.parse.quote(f"[Jimotec] {akt_val}")
-            todo_url = f"https://to-do.office.com/tasks/id/add?title={task_title}"
-            st.link_button("➕ Till Outlook", todo_url)
+            ics_bytes = skapad_enkelt_ics_objekt(akt_val, ans_val, dat_val)
+            st.download_button(
+                label="⚡ Öppna i Outlook",
+                data=ics_bytes,
+                file_name=f"Uppgift_{idx+1}.ics",
+                mime="text/calendar",
+                key=f"dl_ics_{idx}",
+            )
         else:
-            st.button("➕ Till Outlook", disabled=True, key=f"dis_{idx}")
+            st.button("⚡ Öppna i Outlook", disabled=True, key=f"dis_ics_{idx}")
 
     with col_del:
         st.write("")
@@ -301,85 +324,6 @@ if st.session_state.uploaded_images:
 
 # --- REJÄLT BLÅTT AVSKILJANDE BAND FÖR ATT SEKTIONERA SIDAN ---
 st.markdown('<div class="blue-thick-band"></div>', unsafe_allow_html=True)
-
-
-# --- SEKTION 3: FUNKTIONER FÖR EXPORT ---
-def generera_outlook_ics_tasks(atgarder_list, frtg, is_en=False):
-    aktiva_atgarder = [a for a in atgarder_list if a["aktivitet"].strip()]
-    if not aktiva_atgarder:
-        return None
-
-    now = datetime.now().strftime("%Y%m%dT%H%M%SZ")
-    prefix = "[Action Jimotec]" if is_en else "[Åtgärd Jimotec]"
-
-    ics_lines = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//Jimotec AB Task Exporter//jimotec.se//",
-        "METHOD:PUBLISH",
-    ]
-
-    for idx, item in enumerate(aktiva_atgarder, 1):
-        due_date = item["datum"].strftime("%Y%m%d")
-        akt_text = (
-            oversatt_text(item["aktivitet"], "en")
-            if is_en
-            else item["aktivitet"]
-        )
-        summary = f"{prefix} {akt_text}"
-
-        lbl_ans = "Assignee" if is_en else "Ansvarig"
-        lbl_due = "Due Date" if is_en else "Klar senast"
-        lbl_mtg = "Meeting for" if is_en else "Kopplat till möte för"
-
-        description = (
-            f"Activity: {akt_text}\n{lbl_ans}: {item['ansvarig']}\n{lbl_due}:"
-            f" {item['datum']}\n{lbl_mtg}: {frtg}"
-        )
-
-        ics_lines.extend([
-            "BEGIN:VTODO",
-            f"UID:jimotec-task-{now}-{idx}@jimotec.se",
-            f"DTSTAMP:{now}",
-            f"SUMMARY:{summary}",
-            f"DESCRIPTION:{description}",
-            f"DUE;VALUE=DATE:{due_date}",
-            "STATUS:NEEDS-ACTION",
-            "END:VTODO",
-        ])
-
-    ics_lines.append("END:VCALENDAR")
-    return "\r\n".join(ics_lines).encode("utf-8")
-
-
-def generera_outlook_csv(atgarder_list, frtg, is_en=False):
-    import csv
-    import io
-
-    aktiva_atgarder = [a for a in atgarder_list if a["aktivitet"].strip()]
-    if not aktiva_atgarder:
-        return None
-
-    output = io.StringIO()
-    writer = csv.writer(output, delimiter=",", quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(["Subject", "Due Date", "Body", "Priority"])
-
-    prefix = "[Action Jimotec]" if is_en else "[Åtgärd Jimotec]"
-    lbl_ans = "Assignee" if is_en else "Ansvarig"
-    lbl_mtg = "Meeting for" if is_en else "Kopplat till möte för"
-
-    for item in aktiva_atgarder:
-        akt_text = (
-            oversatt_text(item["aktivitet"], "en")
-            if is_en
-            else item["aktivitet"]
-        )
-        subject = f"{prefix} {akt_text}"
-        due_date = item["datum"].strftime("%Y-%m-%d")
-        body = f"{lbl_ans}: {item['ansvarig']}\n{lbl_mtg}: {frtg}"
-        writer.writerow([subject, due_date, body, "Normal"])
-
-    return output.getvalue().encode("utf-8-sig")
 
 
 # --- SEKTION 4: PDF GENERATOR ---
@@ -700,8 +644,8 @@ with st.container(border=True):
 
     st.write("")
 
-    # Röda knappar på en samlad rad
-    c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 1])
+    # Knappar på en samlad rad för PDF & Formulärtömning
+    c1, c2, c3 = st.columns([1, 1, 1])
 
     with c1:
         if st.button("🇸🇪 Skapa PDF (SV)", type="primary", key="btn_pdf_sv"):
@@ -764,48 +708,6 @@ with st.container(border=True):
                     st.error(f"❌ Fel: {e}")
 
     with c3:
-        if st.button("📋 ICS Uppgifter", type="primary", key="btn_ics"):
-            har_atgarder = any(
-                a["aktivitet"].strip() for a in st.session_state.atgarder_lista
-            )
-            if not har_atgarder:
-                st.warning("⚠️ Ingen aktivitet fylld.")
-            else:
-                try:
-                    ics_data = generera_outlook_ics_tasks(
-                        st.session_state.atgarder_lista, foretag, is_en=False
-                    )
-                    st.download_button(
-                        label="📥 Hämta ICS",
-                        data=ics_data,
-                        file_name="Jimotec_Uppgifter.ics",
-                        mime="text/calendar",
-                    )
-                except Exception as e:
-                    st.error(f"❌ Fel: {e}")
-
-    with c4:
-        if st.button("📊 CSV Outlook", type="primary", key="btn_csv"):
-            har_atgarder = any(
-                a["aktivitet"].strip() for a in st.session_state.atgarder_lista
-            )
-            if not har_atgarder:
-                st.warning("⚠️ Ingen aktivitet fylld.")
-            else:
-                try:
-                    csv_data = generera_outlook_csv(
-                        st.session_state.atgarder_lista, foretag, is_en=False
-                    )
-                    st.download_button(
-                        label="📥 Hämta CSV",
-                        data=csv_data,
-                        file_name="Jimotec_Uppgifter_Outlook.csv",
-                        mime="text/csv",
-                    )
-                except Exception as e:
-                    st.error(f"❌ Fel: {e}")
-
-    with c5:
         if st.button("🗑️ Töm formulär", type="primary", key="btn_clear_all"):
             st.session_state["clear_form_flag"] = True
             st.rerun()

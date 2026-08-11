@@ -15,7 +15,7 @@ st.markdown(
     <style>
         [data-testid="stSidebarNav"] {display: none;}
         
-        /* Gör alla vanliga st.button max ca 3 cm breda (~130px) */
+        /* Gör alla vanliga st.button max ca 130px breda */
         div.stButton > button {
             max-width: 130px !important;
             width: 100% !important;
@@ -248,7 +248,7 @@ st.session_state.atgarder_lista = ny_atgarder
 if st.button("➕ Lägg till"):
     st.session_state.atgarder_lista.append({
         "aktivitet": "",
-        "ansvarig": "",
+        "ansvarig": "Torbjörn",
         "datum": date.today() + timedelta(days=7),
     })
     st.rerun()
@@ -313,7 +313,7 @@ if st.session_state.uploaded_images:
 st.divider()
 
 
-# --- SEKTION 3: FUNKTIONER FÖR OUTLOOK EXPORT ---
+# --- SEKTION 3: FUNKTIONER FÖR EXPORT ---
 def generera_outlook_ics_tasks(atgarder_list, frtg, is_en=False):
     aktiva_atgarder = [a for a in atgarder_list if a["aktivitet"].strip()]
     if not aktiva_atgarder:
@@ -625,17 +625,15 @@ def generera_pdf_jimotec(
     return pdf_bytes
 
 
-# --- SEKTION 5: SKAPA EXPORT (PDF + OUTLOOK UPPGIFTER) ---
+# --- SEKTION 5: SKAPA & EXPORTERA (SAMMAnFÖRD PÅ EN RAD LÄNGST NER) ---
 st.subheader("5. Skapa & Exportera")
 
-col_pdf1, col_pdf2 = st.columns(2)
+c1, c2, c3, c4 = st.columns(4)
 
-with col_pdf1:
-    if st.button("🇸🇪 PDF (SV)", type="primary", use_container_width=False):
+with c1:
+    if st.button("🇸🇪 PDF (SV)", type="primary"):
         if not markdown_text.strip():
-            st.warning(
-                "⚠️ Du måste fylla i protokolltexten innan du skapar PDF:en."
-            )
+            st.warning("⚠️ Fyll i protokolltexten först.")
         else:
             try:
                 pdf_data = generera_pdf_jimotec(
@@ -648,23 +646,19 @@ with col_pdf1:
                     st.session_state.uploaded_images,
                     is_en=False,
                 )
-                st.success("✅ Skapad!")
                 st.download_button(
-                    label="📥 Ladda ned",
+                    label="📥 Hämta SV",
                     data=pdf_data,
                     file_name="Motesprotokoll_Jimotec_SV.pdf",
                     mime="application/pdf",
-                    use_container_width=False,
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
 
-with col_pdf2:
-    if st.button("🇬🇧 PDF (EN)", use_container_width=False):
+with c2:
+    if st.button("🇬🇧 PDF (EN)", type="secondary"):
         if not markdown_text.strip():
-            st.warning(
-                "⚠️ Du måste fylla i protokolltexten innan du skapar PDF:en."
-            )
+            st.warning("⚠️ Fyll i protokolltexten först.")
         else:
             try:
                 with st.spinner("Översätter..."):
@@ -687,64 +681,53 @@ with col_pdf2:
                         st.session_state.uploaded_images,
                         is_en=True,
                     )
-                st.success("✅ Skapad!")
                 st.download_button(
-                    label="📥 Ladda ned",
+                    label="📥 Hämta EN",
                     data=pdf_data,
                     file_name="Meeting_Minutes_Jimotec_EN.pdf",
                     mime="application/pdf",
-                    use_container_width=False,
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
 
-st.divider()
-st.markdown("**Exportera till Outlook Uppgifter:**")
-
-col_exp1, col_exp2 = st.columns(2)
-
-with col_exp1:
-    if st.button("📋 Uppgift (.ics)", use_container_width=False):
+with c3:
+    if st.button("📋 ICS (Task)"):
         har_atgarder = any(
             a["aktivitet"].strip() for a in st.session_state.atgarder_lista
         )
         if not har_atgarder:
-            st.warning("⚠️ Fyll i minst en aktivitet.")
+            st.warning("⚠️ Ingen aktivitet fylld.")
         else:
             try:
                 ics_data = generera_outlook_ics_tasks(
                     st.session_state.atgarder_lista, foretag, is_en=False
                 )
-                st.success("✅ Skapad!")
                 st.download_button(
-                    label="📥 Ladda ned",
+                    label="📥 Hämta ICS",
                     data=ics_data,
                     file_name="Jimotec_Uppgifter.ics",
                     mime="text/calendar",
-                    use_container_width=False,
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")
 
-with col_exp2:
-    if st.button("📊 Import (.csv)", use_container_width=False):
+with c4:
+    if st.button("📊 CSV (Outlook)"):
         har_atgarder = any(
             a["aktivitet"].strip() for a in st.session_state.atgarder_lista
         )
         if not har_atgarder:
-            st.warning("⚠️ Fyll i minst en aktivitet.")
+            st.warning("⚠️ Ingen aktivitet fylld.")
         else:
             try:
                 csv_data = generera_outlook_csv(
                     st.session_state.atgarder_lista, foretag, is_en=False
                 )
-                st.success("✅ Skapad!")
                 st.download_button(
-                    label="📥 Ladda ned",
+                    label="📥 Hämta CSV",
                     data=csv_data,
                     file_name="Jimotec_Uppgifter_Outlook.csv",
                     mime="text/csv",
-                    use_container_width=False,
                 )
             except Exception as e:
                 st.error(f"❌ Fel: {e}")

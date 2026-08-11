@@ -9,60 +9,26 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# CSS för att dölja sidonavigering, färglägga containern samt knapparna
+# CSS för att dölja sidonavigering samt göra ramen runt sektion 5 kraftig
 st.markdown(
     """
     <style>
         [data-testid="stSidebarNav"] {display: none;}
         
-        /* Gör hela sektion 5-containern ljusblå */
+        /* Kraftig ram och ljus bakgrund runt hela sektion 5-containern */
         div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) {
-            background-color: #e0f2fe !important;
+            background-color: #f0f9ff !important;
             padding: 24px !important;
             border-radius: 12px !important;
-            border: 1px solid #bae6fd !important;
+            border: 3px solid #0284c7 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
         }
 
-        /* Knapparnas gemensamma grundstil */
+        /* Gör alla knappar i sektion 5 breda och tydliga */
         div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) button {
             width: 100% !important;
             font-weight: bold !important;
-            height: 45px !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 8px !important;
-        }
-
-        /* Knapp 1: Svensk PDF - Mörkblå */
-        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(1) button {
-            background-color: #0284c7 !important;
-        }
-        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(1) button:hover {
-            background-color: #0369a1 !important;
-        }
-
-        /* Knapp 2: Engelsk PDF - Lila */
-        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(2) button {
-            background-color: #6366f1 !important;
-        }
-        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(2) button:hover {
-            background-color: #4f46e5 !important;
-        }
-
-        /* Knapp 3: ICS Uppgift - Grön */
-        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(3) button {
-            background-color: #16a34a !important;
-        }
-        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(3) button:hover {
-            background-color: #15803d !important;
-        }
-
-        /* Knapp 4: CSV Outlook - Orange */
-        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(4) button {
-            background-color: #ea580c !important;
-        }
-        div[data-testid="stVerticalBlockBorderWrapper"]:has(div.export-marker) div[data-testid="column"]:nth-child(4) button:hover {
-            background-color: #c2410c !important;
+            height: 42px !important;
         }
     </style>
     """,
@@ -274,7 +240,7 @@ if st.session_state.uploaded_images:
 
     st.session_state.uploaded_images.sort(key=lambda x: x["order"])
 
-    if st.button("❌ Rensa alla", key="btn_clear_imgs"):
+    if st.button("❌ Rensa alla bilder", key="btn_clear_imgs"):
         st.session_state.uploaded_images = []
         st.rerun()
 
@@ -593,12 +559,10 @@ def generera_pdf_jimotec(
     return pdf_bytes
 
 
-# --- SEKTION 5: SKAPA, IMPORTERA & EXPORTERA (HELA SEKTIONEN LJUSBLÅ) ---
+# --- SEKTION 5: SKAPA, IMPORTERA & EXPORTERA (KRAFTIG RAM) ---
 st.subheader("5. Skapa, Importera & Exportera")
 
-# Vi omsluter hela sektionen i en st.container med border=True
 with st.container(border=True):
-    # Dold markör som gör att CSS hittar och färglägger hela denna container
     st.markdown('<div class="export-marker"></div>', unsafe_allow_html=True)
 
     # AI-Instruktioner och JSON-importör
@@ -675,8 +639,8 @@ with st.container(border=True):
 
     st.write("")
 
-    # Färgade knappar på en samlad rad
-    c1, c2, c3, c4 = st.columns(4)
+    # Exportknappar och Töm-knapp på en samlad rad
+    c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 1])
 
     with c1:
         if st.button("🇸🇪 Skapa PDF (SV)", key="btn_pdf_sv"):
@@ -779,3 +743,19 @@ with st.container(border=True):
                     )
                 except Exception as e:
                     st.error(f"❌ Fel: {e}")
+
+    with c5:
+        # Knapp för att tömma dokumentet helt
+        if st.button("🗑️ Töm formulär", type="primary", key="btn_clear_all"):
+            st.session_state.markdown_text_val = ""
+            st.session_state.datum_tid_val = ""
+            st.session_state.foretag_val = ""
+            st.session_state.plats_val = ""
+            st.session_state.deltagare_val = ""
+            st.session_state.uploaded_images = []
+            st.session_state.atgarder_lista = [{
+                "aktivitet": "",
+                "ansvarig": "",
+                "datum": date.today() + timedelta(days=7),
+            }]
+            st.rerun()

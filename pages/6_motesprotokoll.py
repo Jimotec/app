@@ -9,52 +9,51 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# CSS som tvingar knapparna i varje specifik kolumn att få unika färger
+# CSS för att dölja sidonavigering samt tvinga unika färger på knapparna längst ner
 st.markdown(
     """
     <style>
         [data-testid="stSidebarNav"] {display: none;}
         
-        /* Gör alla knappar i sektion 5 fylliga och stilrena */
-        div[data-testid="column"] button {
-            width: 100% !important;
-            border-radius: 8px !important;
-            font-weight: bold !important;
-            height: 45px !important;
+        /* Tvinga unika färger på exporteringsknapparna baserat på key */
+        button[key="btn_pdf_sv"] {
+            background-color: #1e3a8a !important;
             color: white !important;
-            border: none !important;
+            border-color: #1e3a8a !important;
+        }
+        button[key="btn_pdf_sv"]:hover {
+            background-color: #1e40af !important;
+            color: white !important;
         }
 
-        /* Kolumn 1: Svensk PDF - Blå */
-        div[data-testid="column"]:nth-child(1) button {
-            background-color: #0056b3 !important;
+        button[key="btn_pdf_en"] {
+            background-color: #5b21b6 !important;
+            color: white !important;
+            border-color: #5b21b6 !important;
         }
-        div[data-testid="column"]:nth-child(1) button:hover {
-            background-color: #003d82 !important;
-        }
-
-        /* Kolumn 2: Engelsk PDF - Mörkblå/Lila */
-        div[data-testid="column"]:nth-child(2) button {
-            background-color: #4c51bf !important;
-        }
-        div[data-testid="column"]:nth-child(2) button:hover {
-            background-color: #3c3699 !important;
+        button[key="btn_pdf_en"]:hover {
+            background-color: #6d28d9 !important;
+            color: white !important;
         }
 
-        /* Kolumn 3: ICS Uppgift - Grön */
-        div[data-testid="column"]:nth-child(3) button {
-            background-color: #2e7d32 !important;
+        button[key="btn_ics"] {
+            background-color: #15803d !important;
+            color: white !important;
+            border-color: #15803d !important;
         }
-        div[data-testid="column"]:nth-child(3) button:hover {
-            background-color: #1b5e20 !important;
+        button[key="btn_ics"]:hover {
+            background-color: #166534 !important;
+            color: white !important;
         }
 
-        /* Kolumn 4: CSV Outlook - Orange/Guld */
-        div[data-testid="column"]:nth-child(4) button {
-            background-color: #d97706 !important;
+        button[key="btn_csv"] {
+            background-color: #c2410c !important;
+            color: white !important;
+            border-color: #c2410c !important;
         }
-        div[data-testid="column"]:nth-child(4) button:hover {
-            background-color: #b45309 !important;
+        button[key="btn_csv"]:hover {
+            background-color: #9a3412 !important;
+            color: white !important;
         }
     </style>
     """,
@@ -205,7 +204,7 @@ for idx, item in enumerate(st.session_state.atgarder_lista):
 
 st.session_state.atgarder_lista = ny_atgarder
 
-if st.button("➕ Lägg till"):
+if st.button("➕ Lägg till", key="btn_add_action"):
     st.session_state.atgarder_lista.append({
         "aktivitet": "",
         "ansvarig": "Torbjörn",
@@ -266,7 +265,7 @@ if st.session_state.uploaded_images:
 
     st.session_state.uploaded_images.sort(key=lambda x: x["order"])
 
-    if st.button("❌ Rensa alla"):
+    if st.button("❌ Rensa alla", key="btn_clear_imgs"):
         st.session_state.uploaded_images = []
         st.rerun()
 
@@ -588,7 +587,7 @@ def generera_pdf_jimotec(
 # --- SEKTION 5: SKAPA, IMPORTERA & EXPORTERA (LÄNGST NER) ---
 st.subheader("5. Skapa, Importera & Exportera")
 
-# Rad 1: AI-Instruktioner och JSON-importör
+# AI-Instruktioner och JSON-importör
 with st.expander("ℹ️ Klicka här för instruktioner till AI (Kopiera till chatten)"):
     st.markdown(
         """
@@ -662,11 +661,11 @@ if json_file is not None:
 
 st.write("")
 
-# Rad 2: Färgade knappar på en samlad rad
+# Färgade knappar på en samlad rad med kundanpassade nycklar
 c1, c2, c3, c4 = st.columns(4)
 
 with c1:
-    if st.button("🇸🇪 Skapa PDF (SV)"):
+    if st.button("🇸🇪 Skapa PDF (SV)", key="btn_pdf_sv"):
         if not markdown_text.strip():
             st.warning("⚠️ Fyll i protokolltexten först.")
         else:
@@ -691,7 +690,7 @@ with c1:
                 st.error(f"❌ Fel: {e}")
 
 with c2:
-    if st.button("🇬🇧 Skapa PDF (EN)"):
+    if st.button("🇬🇧 Skapa PDF (EN)", key="btn_pdf_en"):
         if not markdown_text.strip():
             st.warning("⚠️ Fyll i protokolltexten först.")
         else:
@@ -726,7 +725,7 @@ with c2:
                 st.error(f"❌ Fel: {e}")
 
 with c3:
-    if st.button("📋 ICS Uppgifter"):
+    if st.button("📋 ICS Uppgifter", key="btn_ics"):
         har_atgarder = any(
             a["aktivitet"].strip() for a in st.session_state.atgarder_lista
         )
@@ -747,7 +746,7 @@ with c3:
                 st.error(f"❌ Fel: {e}")
 
 with c4:
-    if st.button("📊 CSV Outlook"):
+    if st.button("📊 CSV Outlook", key="btn_csv"):
         har_atgarder = any(
             a["aktivitet"].strip() for a in st.session_state.atgarder_lista
         )

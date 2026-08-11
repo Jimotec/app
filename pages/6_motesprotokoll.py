@@ -9,20 +9,20 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# CSS för dölja sidonavigering, blå avskiljande linje och kraftig ram
+# CSS för att dölja sidonavigering, göra den blå randen mycket bredare samt forma ramen
 st.markdown(
     """
     <style>
         [data-testid="stSidebarNav"] {display: none;}
         
-        /* Blå avskiljande linje ovanför sektion 5 */
+        /* Mycket bredare och tydlig blå rand ovanför sektion 5 */
         hr.blue-divider {
             border: 0;
-            height: 4px;
+            height: 12px;
             background-color: #0284c7;
-            border-radius: 2px;
-            margin-top: 30px;
-            margin-bottom: 20px;
+            border-radius: 6px;
+            margin-top: 40px;
+            margin-bottom: 40px;
         }
 
         /* Kraftig ram och ljus bakgrund runt hela sektion 5-containern */
@@ -44,6 +44,31 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+# --- HANTERA FORMULÄRTÖMNING INNAN ELEMENTEN RITAS ---
+if st.session_state.get("clear_form_flag", False):
+    st.session_state.markdown_text_val = ""
+    st.session_state.datum_tid_val = ""
+    st.session_state.foretag_val = ""
+    st.session_state.plats_val = ""
+    st.session_state.deltagare_val = ""
+    st.session_state.uploaded_images = []
+    st.session_state.atgarder_lista = [{
+        "aktivitet": "",
+        "ansvarig": "",
+        "datum": date.today() + timedelta(days=7),
+    }]
+
+    # Nollställ widget-nycklar säkert innan de ritas ut
+    for k in ["datum_tid_input", "foretag_input", "plats_input", "deltagare_input", "markdown_text_area"]:
+        if k in st.session_state:
+            st.session_state[k] = ""
+
+    for key in list(st.session_state.keys()):
+        if key.startswith("akt_") or key.startswith("ans_") or key.startswith("dat_"):
+            del st.session_state[key]
+
+    st.session_state["clear_form_flag"] = False
 
 # Sidopanel för navigering
 st.sidebar.title("Meny")
@@ -255,7 +280,7 @@ if st.session_state.uploaded_images:
         st.rerun()
 
 
-# --- GROV BLÅ LINJE SOM AVSKILJER DOKUMENTET FRÅN KNAPPARNA ---
+# --- GROV BLÅ RAND SOM AVSKILJER DOKUMENTET FRÅN KNAPPARNA ---
 st.markdown('<hr class="blue-divider">', unsafe_allow_html=True)
 
 
@@ -763,38 +788,5 @@ with st.container(border=True):
 
     with c5:
         if st.button("🗑️ Töm formulär", type="primary", key="btn_clear_all"):
-            # Nollställ session state-värden
-            st.session_state.markdown_text_val = ""
-            st.session_state.datum_tid_val = ""
-            st.session_state.foretag_val = ""
-            st.session_state.plats_val = ""
-            st.session_state.deltagare_val = ""
-            st.session_state.uploaded_images = []
-            st.session_state.atgarder_lista = [{
-                "aktivitet": "",
-                "ansvarig": "",
-                "datum": date.today() + timedelta(days=7),
-            }]
-
-            # Nollställ direkta widget-nycklar så alla textfält töms i gränssnittet
-            if "datum_tid_input" in st.session_state:
-                st.session_state.datum_tid_input = ""
-            if "foretag_input" in st.session_state:
-                st.session_state.foretag_input = ""
-            if "plats_input" in st.session_state:
-                st.session_state.plats_input = ""
-            if "deltagare_input" in st.session_state:
-                st.session_state.deltagare_input = ""
-            if "markdown_text_area" in st.session_state:
-                st.session_state.markdown_text_area = ""
-
-            # Nollställ dynamiska åtgärdsnycklar
-            for key in list(st.session_state.keys()):
-                if (
-                    key.startswith("akt_")
-                    or key.startswith("ans_")
-                    or key.startswith("dat_")
-                ):
-                    del st.session_state[key]
-
+            st.session_state["clear_form_flag"] = True
             st.rerun()

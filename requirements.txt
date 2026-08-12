@@ -3,3 +3,5 @@ google-genai
 markdown
 fpdf2
 icalendar
+google-api-python-client
+google-auth

@@ -1,10 +1,6 @@
-import io
 import json
 import os
 import streamlit as st
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
 
 # Konfigurera sidan
 st.set_page_config(page_title="Jimotec AB", layout="wide")
@@ -18,9 +14,6 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
-# ID för mappen "02. Affärsplan & Strategi" i Google Drive
-FOLDER_ID_AFFARSPLAN = "DIN_MAPP_ID_HÄR"
 
 FILNAMN = "users.json"
 
@@ -49,36 +42,12 @@ for f in [
     logo_file = f
     break
 
-
-# Funktion för att koppla upp mot Google Drive API
-def upload_to_drive(uploaded_file, folder_id):
-  SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-  creds_dict = dict(st.secrets["gcp_service_account"])
-  creds = service_account.Credentials.from_service_account_info(
-      creds_dict, scopes=SCOPES
-  )
-  service = build("drive", "v3", credentials=creds)
-
-  file_metadata = {"name": uploaded_file.name, "parents": [folder_id]}
-  media = MediaIoBaseUpload(
-      io.BytesIO(uploaded_file.getvalue()),
-      mimetype=uploaded_file.type,
-      resumable=True,
-  )
-
-  file = (
-      service.files()
-      .create(body=file_metadata, media_body=media, fields="id")
-      .execute()
-  )
-  return file.get("id")
-
-
 # Inloggningslogik
 if "logged_in" not in st.session_state:
   st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
+  # Visa loggan om den hittades
   if logo_file:
     st.image(logo_file, width=200)
   st.title("🔒 Inloggning - Jimotec AB")
@@ -95,10 +64,12 @@ if not st.session_state.logged_in:
     else:
       st.error("❌ Fel namn eller lösenord. Försök igen.")
 else:
+  # Loggan i sidopanelen när man är inloggad
   if logo_file:
     st.sidebar.image(logo_file, width=150)
   st.sidebar.title("Meny")
 
+  # Huvudlänk för startsidan
   st.sidebar.page_link("app.py", label="Startsida")
 
   # 1. Admin-meny
@@ -110,7 +81,7 @@ else:
   with st.sidebar.expander("Jimotec", expanded=False):
     st.page_link("pages/4_jimotec_miro.py", label="Miro-analys")
 
-  # 3. Vision-meny
+  # 3. Vision-meny (Uppdaterad med AI-sidan)
   with st.sidebar.expander("Vision", expanded=False):
     st.page_link("pages/5_jimotec_ai.py", label="AI")
 
@@ -140,30 +111,8 @@ else:
     st.session_state.logged_in = False
     st.rerun()
 
-  # -------------------- STARTSIDA & OPPLADDNING --------------------
   st.title("Jimotec AB – Startsida")
   st.success(
       f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu"
       " inloggad."
   )
-
-  st.divider()
-
-  # Släpp-ruta för uppladdning till Drive
-  st.subheader(
-      "📁 Ladda upp dokument till: [02. Affärsplan & Strategi]"
-  )  #
-  uploaded_files = st.file_uploader(
-      "Dra och släpp filer här (PDF, Word, Excel osv.):",
-      accept_multiple_files=True,
-  )
-
-  if uploaded_files and st.button("Ladda upp till Google Drive"):
-    for uploaded_file in uploaded_files:
-      try:
-        file_id = upload_to_drive(uploaded_file, FOLDER_ID_AFFARSPLAN)
-        st.success(
-            f"✅ Filen '{uploaded_file.name}' laddades upp till Drive!"
-        )
-      except Exception as e:
-        st.error(f"❌ Fel vid uppladdning av {uploaded_file.name}: {e}")

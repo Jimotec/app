@@ -42,6 +42,20 @@ for f in [
     logo_file = f
     break
 
+
+# Hjälpfunktion för säkra sidlänkar
+def safe_page_link(page_path, label):
+  try:
+    st.page_link(page_path, label=label)
+  except Exception:
+    # Om sökbanan misslyckas, prova utan "pages/"-prefix
+    short_path = page_path.replace("pages/", "")
+    try:
+      st.page_link(short_path, label=label)
+    except Exception:
+      st.sidebar.warning(f"Sidan saknas: {label}")
+
+
 # Inloggningslogik
 if "logged_in" not in st.session_state:
   st.session_state.logged_in = False
@@ -74,38 +88,31 @@ else:
 
   # 1. Admin-meny
   with st.sidebar.expander("Admin", expanded=False):
-    st.page_link("pages/1_start_admin.py", label="Admin Start")
-    st.page_link("pages/2_sida_password.py", label="Hantera lösenord")
+    safe_page_link("pages/1_start_admin.py", "Admin Start")
+    safe_page_link("pages/2_sida_password.py", "Hantera lösenord")
 
   # 2. Jimotec-meny
   with st.sidebar.expander("Jimotec", expanded=False):
-    st.page_link("pages/4_jimotec_miro.py", label="Miro-analys")
+    safe_page_link("pages/4_jimotec_miro.py", "Miro-analys")
 
   # 3. Vision-meny (Uppdaterad med AI-sidan)
   with st.sidebar.expander("Vision", expanded=False):
-    st.page_link("pages/5_jimotec_ai.py", label="AI")
+    safe_page_link("pages/5_jimotec_ai.py", "AI")
 
   # 4. Affärsplan-meny
   with st.sidebar.expander("Affärsplan", expanded=False):
-    st.page_link(
-        "pages/3_affarsplan_sammanfattning.py", label="1. Sammanfattning"
+    safe_page_link("pages/3_affarsplan_sammanfattning.py", "1. Sammanfattning")
+    safe_page_link("pages/3_affarsplan_ide.py", "2. Affärsidé och vision")
+    safe_page_link("pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning")
+    safe_page_link("pages/3_affarsplan_marknad.py", "4. Marknad och bransch")
+    safe_page_link(
+        "pages/3_affarsplan_forsaljning.py", "5. Marknadsföring och försäljning"
     )
-    st.page_link("pages/3_affarsplan_ide.py", label="2. Affärsidé och vision")
-    st.page_link("pages/3_affarsplan_foretag.py", label="3. Företagsbeskrivning")
-    st.page_link(
-        "pages/3_affarsplan_marknad.py", label="4. Marknad och bransch"
+    safe_page_link(
+        "pages/3_affarsplan_organisation.py", "6. Organisation och personal"
     )
-    st.page_link(
-        "pages/3_affarsplan_forsaljning.py",
-        label="5. Marknadsföring och försäljning",
-    )
-    st.page_link(
-        "pages/3_affarsplan_organisation.py", label="6. Organisation och personal"
-    )
-    st.page_link(
-        "pages/3_affarsplan_produkter.py", label="7. Produkter eller tjänster"
-    )
-    st.page_link("pages/3_affarsplan_ekonomi.py", label="8. Ekonomisk plan")
+    safe_page_link("pages/3_affarsplan_produkter.py", "7. Produkter eller tjänster")
+    safe_page_link("pages/3_affarsplan_ekonomi.py", "8. Ekonomisk plan")
 
   if st.sidebar.button("Logga ut"):
     st.session_state.logged_in = False

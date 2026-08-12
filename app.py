@@ -5,7 +5,7 @@ import streamlit as st
 # Konfigurera sidan
 st.set_page_config(page_title="Jimotec AB", layout="wide")
 
-# Döljer automatiska listan med sidor i sidopanelen helt
+# Dölj den automatiska listan med sidor i sidopanelen helt
 st.markdown(
     """
 <style>
@@ -20,10 +20,10 @@ FILNAMN = "users.json"
 
 # Ladda användare från fil (standardlösenord satt till 12)
 def ladda_anvandare():
-  if os.path.exists(FILNAMN):
-    with open(FILNAMN, "r", encoding="utf-8") as f:
-      return json.load(f)
-  return {"admin": "12"}
+    if os.path.exists(FILNAMN):
+        with open(FILNAMN, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"admin": "12"}
 
 
 anvandare_dict = ladda_anvandare()
@@ -38,88 +38,118 @@ for f in [
     "jimotec.png",
     "Jimotec.png",
 ]:
-  if os.path.exists(f):
-    logo_file = f
-    break
+    if os.path.exists(f):
+        logo_file = f
+        break
 
 
-# Hjälpfunktion för säkra sidlänkar
-def safe_page_link(page_path, label):
-  try:
-    st.page_link(page_path, label=label)
-  except Exception:
-    # Om sökbanan misslyckas, prova utan "pages/"-prefix
-    short_path = page_path.replace("pages/", "")
+# Hjälpfunktion för säkra sidlänkar i rätt container
+def safe_page_link(page_path, label, container=st.sidebar):
     try:
-      st.page_link(short_path, label=label)
+        container.page_link(page_path, label=label)
     except Exception:
-      st.sidebar.warning(f"Sidan saknas: {label}")
+        container.warning(f"Sidan saknas: {label}")
 
 
 # Inloggningslogik
 if "logged_in" not in st.session_state:
-  st.session_state.logged_in = False
+    st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
-  # Visa loggan om den hittades
-  if logo_file:
-    st.image(logo_file, width=200)
-  st.title("🔒 Inloggning - Jimotec AB")
-  input_namn = st.text_input("Namn")
-  input_losenord = st.text_input("Lösenord", type="password")
-  if st.button("Logga in"):
-    if (
-        input_namn in anvandare_dict
-        and anvandare_dict[input_namn] == input_losenord
-    ):
-      st.session_state.logged_in = True
-      st.session_state.anvandarnamn = input_namn
-      st.rerun()
-    else:
-      st.error("❌ Fel namn eller lösenord. Försök igen.")
+    # Visa loggan om den hittades
+    if logo_file:
+        st.image(logo_file, width=200)
+    st.title("🔒 Inloggning - Jimotec AB")
+    input_namn = st.text_input("Namn")
+    input_losenord = st.text_input("Lösenord", type="password")
+    if st.button("Logga in"):
+        if (
+            input_namn in anvandare_dict
+            and anvandare_dict[input_namn] == input_losenord
+        ):
+            st.session_state.logged_in = True
+            st.session_state.anvandarnamn = input_namn
+            st.rerun()
+        else:
+            st.error("❌ Fel namn eller lösenord. Försök igen.")
 else:
-  # Loggan i sidopanelen när man är inloggad
-  if logo_file:
-    st.sidebar.image(logo_file, width=150)
-  st.sidebar.title("Meny")
+    # Loggan i sidopanelen när man är inloggad
+    if logo_file:
+        st.sidebar.image(logo_file, width=150)
+    st.sidebar.title("Meny")
 
-  # Huvudlänk för startsidan
-  st.sidebar.page_link("app.py", label="Startsida")
+    # Huvudlänk för startsidan
+    st.sidebar.page_link("app.py", label="Startsida")
 
-  # 1. Admin-meny
-  with st.sidebar.expander("Admin", expanded=False):
-    safe_page_link("pages/1_start_admin.py", "Admin Start")
-    safe_page_link("pages/2_sida_password.py", "Hantera lösenord")
+    # 1. Vision & AI
+    vision_exp = st.sidebar.expander("Vision", expanded=False)
+    safe_page_link("pages/4_vision.py", "Vision & AI", container=vision_exp)
 
-  # 2. Jimotec-meny
-  with st.sidebar.expander("Jimotec", expanded=False):
-    safe_page_link("pages/4_jimotec_miro.py", "Miro-analys")
-
-  # 3. Vision-meny (Uppdaterad med AI-sidan)
-  with st.sidebar.expander("Vision", expanded=False):
-    safe_page_link("pages/5_jimotec_ai.py", "AI")
-
-  # 4. Affärsplan-meny
-  with st.sidebar.expander("Affärsplan", expanded=False):
-    safe_page_link("pages/3_affarsplan_sammanfattning.py", "1. Sammanfattning")
-    safe_page_link("pages/3_affarsplan_ide.py", "2. Affärsidé och vision")
-    safe_page_link("pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning")
-    safe_page_link("pages/3_affarsplan_marknad.py", "4. Marknad och bransch")
+    # 2. Möten
+    mote_exp = st.sidebar.expander("Möten", expanded=False)
     safe_page_link(
-        "pages/3_affarsplan_forsaljning.py", "5. Marknadsföring och försäljning"
+        "pages/6_motesprotokoll.py", "Mötesprotokoll", container=mote_exp
+    )
+
+    # 3. Affärsplan
+    affarsplan_exp = st.sidebar.expander("Affärsplan", expanded=False)
+    safe_page_link(
+        "pages/3_affarsplan_sammanfattning.py",
+        "1. Sammanfattning",
+        container=affarsplan_exp,
     )
     safe_page_link(
-        "pages/3_affarsplan_organisation.py", "6. Organisation och personal"
+        "pages/3_affarsplan_ide.py",
+        "2. Affärsidé och vision",
+        container=affarsplan_exp,
     )
-    safe_page_link("pages/3_affarsplan_produkter.py", "7. Produkter eller tjänster")
-    safe_page_link("pages/3_affarsplan_ekonomi.py", "8. Ekonomisk plan")
+    safe_page_link(
+        "pages/3_affarsplan_foretag.py",
+        "3. Företagsbeskrivning",
+        container=affarsplan_exp,
+    )
+    safe_page_link(
+        "pages/3_affarsplan_marknad.py",
+        "4. Marknad och bransch",
+        container=affarsplan_exp,
+    )
+    safe_page_link(
+        "pages/3_affarsplan_forsaljning.py",
+        "5. Marknadsföring och försäljning",
+        container=affarsplan_exp,
+    )
+    safe_page_link(
+        "pages/3_affarsplan_organisation.py",
+        "6. Organisation och personal",
+        container=affarsplan_exp,
+    )
+    safe_page_link(
+        "pages/3_affarsplan_produkter.py",
+        "7. Produkter eller tjänster",
+        container=affarsplan_exp,
+    )
+    safe_page_link(
+        "pages/3_affarsplan_genomforandeplan.py",
+        "8. Genomförandeplan",
+        container=affarsplan_exp,
+    )
+    safe_page_link(
+        "pages/3_affarsplan_riskanalys.py",
+        "9. Riskanalys",
+        container=affarsplan_exp,
+    )
+    safe_page_link(
+        "pages/3_affarsplan_ekonomi.py",
+        "10. Ekonomisk plan",
+        container=affarsplan_exp,
+    )
 
-  if st.sidebar.button("Logga ut"):
-    st.session_state.logged_in = False
-    st.rerun()
+    if st.sidebar.button("Logga ut"):
+        st.session_state.logged_in = False
+        st.rerun()
 
-  st.title("Jimotec AB – Startsida")
-  st.success(
-      f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu"
-      " inloggad."
-  )
+    st.title("Jimotec AB – Startsida")
+    st.success(
+        f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu"
+        " inloggad."
+    )

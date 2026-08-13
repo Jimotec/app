@@ -72,7 +72,7 @@ def spara_till_google_drive(uploaded_file):
         )
         service = build("drive", "v3", credentials=creds)
 
-        # Skapa metadata och ladda upp filen
+        # Skapa metadata och ladda upp filen (supportsAllDrives=True krävs för service accounts)
         file_metadata = {
             "name": uploaded_file.name,
             "parents": [FOLDER_ID],
@@ -80,7 +80,10 @@ def spara_till_google_drive(uploaded_file):
         media = MediaFileUpload(temp_path, resumable=True)
 
         service.files().create(
-            body=file_metadata, media_body=media, fields="id"
+            body=file_metadata,
+            media_body=media,
+            fields="id",
+            supportsAllDrives=True,
         ).execute()
 
         # Ta bort den tillfälliga lokala filen

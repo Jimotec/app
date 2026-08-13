@@ -1,6 +1,9 @@
 import json
 import os
 import streamlit as st
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 
 # Konfigurera sidan
 st.set_page_config(page_title="Jimotec AB", layout="wide")
@@ -51,19 +54,55 @@ def safe_page_link(page_path, label, container=st.sidebar):
         container.warning(f"Sidan saknas: {label}")
 
 
-# Hjälpfunktion för uppladdning till Google Drive
+# Hjälpfunktion för uppladdning till Google Drive via Google Drive API
 def spara_till_google_drive(uploaded_file):
-    """Här kopplas din Google Drive-integration.
+    # Ditt unika Folder ID för mappen "02. Affärsplan & Strategi"
+    FOLDER_ID = "1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw"
 
-    Exempelvis med google-api-python-client eller PyDrive2 till mappen '02.
-    Affärsplan & Strategi'.
-    """
-    # Exempel: ID för mappen "02. Affärsplan & Strategi" i Google Drive
-    FOLDER_ID = "DIN_GOOGLE_DRIVE_FOLDER_ID"
+    # Sökväg till din Google Service Account JSON-nyckel
+    SERVICE_ACCOUNT_FILE = "service_account.json"
 
-    # För tillfället sparar vi filen lokalt eller visar bekräftelse.
-    # När dina API-nycklar/Service Account är inlagda skickas filen hit.
-    return True
+    if not os.path.exists(SERVICE_ACCOUNT_FILE):
+        st.error(
+            f"❌ Nyckelfilen '{SERVICE_ACCOUNT_FILE}' saknas. Lägg den i samma"
+            " mapp som app.py."
+        )
+        return False
+
+    temp_path = f"temp_{uploaded_file.name}"
+    try:
+        # Spara den uppladdade filen tillfälligt lokalt
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        # Autentisera mot Google Drive API
+        SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+        creds = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        )
+        service = build("drive", "v3", credentials=creds)
+
+        # Skapa metadata och ladda upp filen
+        file_metadata = {
+            "name": uploaded_file.name,
+            "parents": [FOLDER_ID],
+        }
+        media = MediaFileUpload(temp_path, resumable=True)
+
+        service.files().create(
+            body=file_metadata, media_body=media, fields="id"
+        ).execute()
+
+        # Ta bort den tillfälliga lokala filen
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        return True
+    except Exception as e:
+        st.error(f"Ett fel uppstod vid uppladdning till Google Drive: {e}")
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        return False
 
 
 # Inloggningslogik

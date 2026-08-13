@@ -54,31 +54,21 @@ def safe_page_link(page_path, label, container=st.sidebar):
         container.warning(f"Sidan saknas: {label}")
 
 
-# Hjälpfunktion för uppladdning till Google Drive via Google Drive API
+# Hjälpfunktion för uppladdning till Google Drive via Streamlit Secrets
 def spara_till_google_drive(uploaded_file):
     # Ditt unika Folder ID för mappen "02. Affärsplan & Strategi"
     FOLDER_ID = "1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw"
 
-    # Sökväg till din Google Service Account JSON-nyckel
-    SERVICE_ACCOUNT_FILE = "service_account.json"
-
-    if not os.path.exists(SERVICE_ACCOUNT_FILE):
-        st.error(
-            f"❌ Nyckelfilen '{SERVICE_ACCOUNT_FILE}' saknas. Lägg den i samma"
-            " mapp som app.py."
-        )
-        return False
-
-    temp_path = f"temp_{uploaded_file.name}"
     try:
-        # Spara den uppladdade filen tillfälligt lokalt
+        # Spara den uppladdade filen tillfälligt lokalt i appen
+        temp_path = f"temp_{uploaded_file.name}"
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        # Autentisera mot Google Drive API
+        # Autentisera mot Google Drive via Streamlit Secrets
         SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-        creds = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        creds = service_account.Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"], scopes=SCOPES
         )
         service = build("drive", "v3", credentials=creds)
 
@@ -205,8 +195,7 @@ else:
     # --- Huvudfältet (Mitten på sidan) ---
     st.title("Jimotec AB – Startsida")
     st.success(
-        f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu"
-        " inloggad."
+        f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu inloggad."
     )
 
     st.markdown("---")
@@ -217,8 +206,7 @@ else:
     with col2:
         st.subheader("📁 Ladda upp dokument till Google Drive")
         st.caption(
-            "Dokument som släpps här sparas direkt i mappen **02. Affärsplan &"
-            " Strategi**."
+            "Dokument som släpps här sparas direkt i mappen **02. Affärsplan & Strategi**."
         )
 
         uploaded_files = st.file_uploader(
@@ -232,8 +220,7 @@ else:
                 ok = spara_till_google_drive(uploaded_file)
                 if ok:
                     st.success(
-                        f"✅ **{uploaded_file.name}** har laddats upp till **02."
-                        " Affärsplan & Strategi**!"
+                        f"✅ **{uploaded_file.name}** har laddats upp till **02. Affärsplan & Strategi**!"
                     )
                 else:
                     st.error(

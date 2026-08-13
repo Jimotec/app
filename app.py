@@ -199,7 +199,7 @@ else:
                 else:
                     st.error(
                         f"❌ Det gick inte att ladda upp {uploaded_file.name}."
-                    )import json
+                import json
 import os
 import streamlit as st
 from google.oauth2.credentials import Credentials

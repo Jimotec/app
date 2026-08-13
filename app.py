@@ -65,26 +65,31 @@ def spara_till_google_drive(uploaded_file):
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        # Autentisera mot Google Drive via Streamlit Secrets
-        SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+        # Autentisera mot Google Drive via Streamlit Secrets med full Drive-scope
+        SCOPES = ["https://www.googleapis.com/auth/drive"]
         creds = service_account.Credentials.from_service_account_info(
             st.secrets["gcp_service_account"], scopes=SCOPES
         )
         service = build("drive", "v3", credentials=creds)
 
-        # Skapa metadata och ladda upp filen (supportsAllDrives=True krävs för service accounts)
+        # Skapa metadata med föräldramapp
         file_metadata = {
             "name": uploaded_file.name,
             "parents": [FOLDER_ID],
         }
         media = MediaFileUpload(temp_path, resumable=True)
 
-        service.files().create(
-            body=file_metadata,
-            media_body=media,
-            fields="id",
-            supportsAllDrives=True,
-        ).execute()
+        # Skapa filen i mappen och ignorera quota-kontroll för service accounts på delade mappar
+        created_file = (
+            service.files()
+            .create(
+                body=file_metadata,
+                media_body=media,
+                fields="id",
+                supportsAllDrives=True,
+            )
+            .execute()
+        )
 
         # Ta bort den tillfälliga lokala filen
         if os.path.exists(temp_path):

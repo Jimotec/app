@@ -59,7 +59,6 @@ def safe_page_link(page_path, label, container=st.sidebar):
 def spara_till_google_drive(uploaded_file):
     folder_id = "1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw"
     try:
-        # Skapar uppkoppling via robotkontot i st.secrets
         info = st.secrets["gcp_service_account"]
         creds = service_account.Credentials.from_service_account_info(
             info, scopes=["https://www.googleapis.com/auth/drive"]
@@ -78,7 +77,10 @@ def spara_till_google_drive(uploaded_file):
         )
 
         service.files().create(
-            body=file_metadata, media_body=media, fields="id"
+            body=file_metadata,
+            media_body=media,
+            fields="id",
+            supportsAllDrives=True,
         ).execute()
 
         return True

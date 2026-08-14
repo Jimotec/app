@@ -128,7 +128,7 @@ else:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        # 00. Ägare (TESTAS HÄR MED EXAKT LÄNK)
+        # Kolumn 1: 00, 03, 06
         st.link_button(
             "👑 00. Ägare",
             "https://drive.google.com/drive/folders/1Y3G3mbLjB0-yytQVrTLNqG0lUhNSJX3s?usp=drive_link",
@@ -136,34 +136,35 @@ else:
         )
         st.link_button(
             "📝 03. Mötesprotokoll & Ledning",
-            "https://drive.google.com",
+            "https://drive.google.com/drive/folders/1dlH1Vtf8o1b9qEsWnrYYxcx7W-11wQ2u?usp=drive_link",
             use_container_width=True,
         )
         st.link_button(
             "🤝 06. CRM & Sälj",
-            "https://drive.google.com",
+            "https://drive.google.com/drive/folders/1K49xSjbeYKXX1P84pWTibXsl09bC3-2q?usp=drive_link",
             use_container_width=True,
         )
 
     with col2:
+        # Kolumn 2: 01, 04, 07
         st.link_button(
             "🏛️ 01. Styrelse",
-            "https://drive.google.com",
+            "https://drive.google.com/drive/folders/1J_f2FeSxVoh1lMwZhBhK9B2Jmtms99t5?usp=drive_link",
             use_container_width=True,
         )
         st.link_button(
             "📋 04. Rutiner & Instruktioner",
-            "https://drive.google.com",
+            "https://drive.google.com/drive/folders/1orxyLf4BUO1eIGArEleDBD2_WlHJ85oD?usp=drive_link",
             use_container_width=True,
         )
         st.link_button(
             "🏭 07. ERP & Produktion",
-            "https://drive.google.com",
+            "https://drive.google.com/drive/folders/1JeX24o7uWjIAiCaqWl8B89VsSDqwXX_h?usp=drive_link",
             use_container_width=True,
         )
 
     with col3:
-        # 02. Affärsplan & Strategi
+        # Kolumn 3: 02, 05, 08
         st.link_button(
             "🚀 02. Affärsplan & Strategi",
             "https://drive.google.com/drive/folders/1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw",
@@ -171,11 +172,11 @@ else:
         )
         st.link_button(
             "🔎 05. Kvalitet & Avvikelser",
-            "https://drive.google.com",
+            "https://drive.google.com/drive/folders/1qBWiM-7LKI7rKpkXFSVP2T0TSEIphq1c?usp=drive_link",
             use_container_width=True,
         )
         st.link_button(
             "👥 08. HR & Personal",
-            "https://drive.google.com",
+            "https://drive.google.com/drive/folders/1wF99tAUAKY575OBO4kN3Ggu5L2SerF_d?usp=drive_link",
             use_container_width=True,
         )

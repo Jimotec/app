@@ -124,48 +124,99 @@ else:
 
     st.write("---")
     st.subheader("📁 Google Drive - Dokument & Mappar")
-    
-    # Funktion för att rita ut snygga färgknappar
+
+    # Funktion för att rita ut färgkodade knappar
     def farg_knapp(lank, ikon, text, bg_color):
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <a href="{lank}" target="_blank" style="
             display: block;
             background-color: {bg_color};
             color: white;
             text-align: left;
-            padding: 15px;
+            padding: 14px 18px;
             border-radius: 8px;
             text-decoration: none;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 14px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+            transition: transform 0.1s ease-in-out;
         ">
-            <span style="font-size: 20px; margin-right: 10px;">{ikon}</span> {text}
+            <span style="font-size: 18px; margin-right: 8px;">{ikon}</span> {text}
         </a>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
-    # Skapar 3 kolumner för att få en snygg layout
+    # 3-kolumn layout för knapparna
     col1, col2, col3 = st.columns(3)
 
-    # Kolumn 1
     with col1:
-        farg_knapp("https://drive.google.com/...", "👑", "00. Ägare", "#e74c3c") # Röd
-        farg_knapp("https://drive.google.com/...", "📝", "03. Mötesprotokoll & Ledning", "#9b59b6") # Lila
-        farg_knapp("https://drive.google.com/...", "🤝", "06. CRM & Sälj", "#2ecc71") # Grön
-
-    # Kolumn 2
-    with col2:
-        farg_knapp("https://drive.google.com/...", "🏛️", "01. Styrelse", "#e67e22") # Orange
-        farg_knapp("https://drive.google.com/...", "📋", "04. Rutiner & Instruktioner", "#1abc9c") # Turkos
-        farg_knapp("https://drive.google.com/...", "🏭", "07. ERP & Produktion", "#2980b9") # Mörkblå
-
-    # Kolumn 3
-    with col3:
-        # Din exakta länk för Affärsplan & Strategi
+        # 00. Ägare
         farg_knapp(
-            "https://drive.google.com/drive/u/0/folders/1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw", 
-            "🚀", "02. Affärsplan & Strategi", "#3498db" # Ljusblå
+            "https://drive.google.com/drive/u/0/folders/1Y3G3mbLjB0-yytQVrTLNqG0IUhNSJX3s",
+            "👑",
+            "00. Ägare",
+            "#c0392b",
         )
-        farg_knapp("https://drive.google.com/...", "🔎", "05. Kvalitet & Avvikelser", "#f39c12") # Gul/Senap
-        farg_knapp("https://drive.google.com/...", "👥", "08. HR & Personal", "#fd79a8") # Rosa
+        # 03. Mötesprotokoll & Ledning
+        farg_knapp(
+            "https://drive.google.com/drive/u/0/folders/1dIH1Vtf8o1b9qEsWnrYYxcx7W-11wQ2u",
+            "📝",
+            "03. Mötesprotokoll & Ledning",
+            "#8e44ad",
+        )
+        # 06. CRM & Sälj
+        farg_knapp(
+            "https://drive.google.com/drive/u/0/folders/1K49xSjbeYKXX1P84pWTibXsl09bC3-2q",
+            "🤝",
+            "06. CRM & Sälj",
+            "#27ae60",
+        )
+
+    with col2:
+        # 01. Styrelse
+        farg_knapp(
+            "https://drive.google.com/drive/u/0/folders/1J_f2FeSxVoh1IMwZhBhK9B2Jmtms99t5",
+            "🏛️",
+            "01. Styrelse",
+            "#d35400",
+        )
+        # 04. Rutiner & Instruktioner
+        farg_knapp(
+            "https://drive.google.com/drive/u/0/folders/1orxyLf4BUO1eIGArEleDBD2_WlHJ85oD",
+            "📋",
+            "04. Rutiner & Instruktioner",
+            "#16a085",
+        )
+        # 07. ERP & Produktion
+        farg_knapp(
+            "https://drive.google.com/drive/u/0/folders/1JeX24o7uWjIAiCaqWI8B89VsSDqwXX_h",
+            "🏭",
+            "07. ERP & Produktion",
+            "#2980b9",
+        )
+
+    with col3:
+        # 02. Affärsplan & Strategi
+        farg_knapp(
+            "https://drive.google.com/drive/u/0/folders/1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw",
+            "🚀",
+            "02. Affärsplan & Strategi",
+            "#2980b9",
+        )
+        # 05. Kvalitet & Avvikelser
+        farg_knapp(
+            "https://drive.google.com/drive/u/0/folders/1qBWiM-7LKI7rKpkXFSVP2T0TSEIphq1c",
+            "🔎",
+            "05. Kvalitet & Avvikelser",
+            "#f39c12",
+        )
+        # 08. HR & Personal
+        farg_knapp(
+            "https://drive.google.com/drive/u/0/folders/1wF99tAUAKY575OBO4kN3Ggu5L2SerF_d",
+            "👥",
+            "08. HR & Personal",
+            "#e84393",
+        )

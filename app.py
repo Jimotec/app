@@ -100,7 +100,8 @@ else:
             "5. Marknadsföring och försäljning",
         )
         try_page_link(
-            "pages/3_affarsplan_organisation.py", "6. Organisation och personal"
+            "pages/3_affarsplan_organisation.py",
+            "6. Organisation och personal",
         )
         try_page_link(
             "pages/3_affarsplan_produkter.py", "7. Produkter eller tjänster"
@@ -124,8 +125,15 @@ else:
     )
 
     st.write("---")
-    st.subheader("📁 Jimotec Google Drive")
-    st.info(
-        "Öppna Google Drive i en ny flik för att ladda upp och hantera filer direkt."
-    )
-    st.link_button("🚀 Öppna Google Drive", "https://drive.google.com")
+    st.subheader("📁 Snabbåtkomst till Google Drive")
+
+    # Informationsruta och knapp för 02. Affärsplan & Strategi
+    with st.container(border=True):
+        st.markdown("### 📂 02. Affärsplan & Strategi")
+        st.write(
+            "Klicka nedan för att öppna mappen direkt i Google Drive i en ny flik för att läsa eller redigera dokument."
+        )
+        st.link_button(
+            "🚀 Öppna 02. Affärsplan & Strategi",
+            "https://drive.google.com",
+        )

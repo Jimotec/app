@@ -1,7 +1,7 @@
 import io
 import json
 import os
-from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import streamlit as st
@@ -55,13 +55,17 @@ def safe_page_link(page_path, label, container=st.sidebar):
         container.warning(f"Sidan saknas: {label}")
 
 
-# Hjälpfunktion för uppladdning till Google Drive (Service Account)
+# Hjälpfunktion för uppladdning till Google Drive via Refresh Token
 def spara_till_google_drive(uploaded_file):
     folder_id = "1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw"
     try:
-        info = st.secrets["gcp_service_account"]
-        creds = service_account.Credentials.from_service_account_info(
-            info, scopes=["https://www.googleapis.com/auth/drive"]
+        creds = Credentials(
+            token=None,
+            refresh_token=st.secrets["oauth"]["refresh_token"],
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=st.secrets["oauth"]["client_id"],
+            client_secret=st.secrets["oauth"]["client_secret"],
+            scopes=["https://www.googleapis.com/auth/drive"],
         )
         service = build("drive", "v3", credentials=creds)
 

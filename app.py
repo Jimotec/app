@@ -107,9 +107,7 @@ else:
             "pages/3_affarsplan_produkter.py", "7. Produkter eller tjänster"
         )
         try_page_link("pages/3_affarsplan_ekonomi.py", "8. Ekonomisk plan")
-        try_page_link(
-            "pages/3_affarsplan_riskanalys.py", "9. Riskanalys"
-        )
+        try_page_link("pages/3_affarsplan_riskanalys.py", "9. Riskanalys")
         try_page_link(
             "pages/3_affarsplan_genomforandeplan.py", "10. Genomförandeplan"
         )
@@ -124,16 +122,8 @@ else:
         f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är inloggad."
     )
 
-    st.write("---")
-    st.subheader("📁 Snabbåtkomst till Google Drive")
-
-    # Informationsruta med exakt länk till 02. Affärsplan & Strategi
-    with st.container(border=True):
-        st.markdown("### 📂 02. Affärsplan & Strategi")
-        st.write(
-            "Klicka nedan för att öppna mappen direkt i Google Drive i en ny flik för att läsa eller redigera dokument."
-        )
-        st.link_button(
-            "🚀 Öppna 02. Affärsplan & Strategi",
-            "https://drive.google.com/drive/u/0/folders/1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw",
-        )
+    # Endast knappen
+    st.link_button(
+        "🚀 Öppna 02. Affärsplan & Strategi",
+        "https://drive.google.com/drive/u/0/folders/1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw",
+    )

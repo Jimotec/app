@@ -5,11 +5,56 @@ import streamlit as st
 # Konfigurera sidan
 st.set_page_config(page_title="Jimotec AB", layout="wide")
 
-# Döljer automatiska listan med sidor i sidopanelen
+# Döljer automatiska listan med sidor i sidopanelen samt anpassad styling
 st.markdown(
     """
     <style>
     [data-testid="stSidebarNav"] {display: none;}
+    
+    /* Behållare för att placera knapparna på en rad till höger */
+    .drive-buttons-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+        margin-bottom: 20px;
+    }
+    
+    /* Kompakt styling för varje Drive-knapp */
+    .drive-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #ffffff !important;
+        text-decoration: none !important;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        white-space: nowrap;
+    }
+    
+    .drive-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        opacity: 0.92;
+        color: #ffffff !important;
+    }
+
+    /* Specifika färger per mapp */
+    .btn-00 { background-color: #8E44AD; } /* Lila */
+    .btn-01 { background-color: #2C3E50; } /* Mörkblå/Grafit */
+    .btn-02 { background-color: #27AE60; } /* Grön */
+    .btn-03 { background-color: #2980B9; } /* Blå */
+    .btn-04 { background-color: #16A085; } /* Teal */
+    .btn-05 { background-color: #D35400; } /* Orange */
+    .btn-06 { background-color: #C0392B; } /* Röd */
+    .btn-07 { background-color: #34495E; } /* Stålgrå */
+    .btn-08 { background-color: #E67E22; } /* Bärnsten */
     </style>
     """,
     unsafe_allow_html=True,
@@ -117,66 +162,29 @@ else:
         st.rerun()
 
     # Startsida innehåll
-    st.title("Jimotec AB – Startsida")
-    st.success(
-        f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är inloggad."
-    )
+    col_titel, col_knappar = st.columns([1, 2.5])
+
+    with col_titel:
+        st.title("Jimotec AB")
+        st.success(f"Inloggad som: **{st.session_state.get('anvandarnamn', '')}**")
+
+    with col_knappar:
+        # Små färgade knappar samlade på rad till höger
+        st.markdown(
+            """
+            <div class="drive-buttons-container">
+                <a href="https://drive.google.com/drive/folders/1Y3G3mbLjB0-yytQVrTLNqG0lUhNSJX3s?usp=drive_link" target="_blank" class="drive-btn btn-00">👑 00. Ägare</a>
+                <a href="https://drive.google.com/drive/folders/1J_f2FeSxVoh1lMwZhBhK9B2Jmtms99t5?usp=drive_link" target="_blank" class="drive-btn btn-01">🏛️ 01. Styrelse</a>
+                <a href="https://drive.google.com/drive/folders/1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw" target="_blank" class="drive-btn btn-02">🚀 02. Affärsplan</a>
+                <a href="https://drive.google.com/drive/folders/1dlH1Vtf8o1b9qEsWnrYYxcx7W-11wQ2u?usp=drive_link" target="_blank" class="drive-btn btn-03">📝 03. Möten</a>
+                <a href="https://drive.google.com/drive/folders/1orxyLf4BUO1eIGArEleDBD2_WlHJ85oD?usp=drive_link" target="_blank" class="drive-btn btn-04">📋 04. Rutiner</a>
+                <a href="https://drive.google.com/drive/folders/1qBWiM-7LKI7rKpkXFSVP2T0TSEIphq1c?usp=drive_link" target="_blank" class="drive-btn btn-05">🔎 05. Kvalitet</a>
+                <a href="https://drive.google.com/drive/folders/1K49xSjbeYKXX1P84pWTibXsl09bC3-2q?usp=drive_link" target="_blank" class="drive-btn btn-06">🤝 06. CRM & Sälj</a>
+                <a href="https://drive.google.com/drive/folders/1JeX24o7uWjIAiCaqWl8B89VsSDqwXX_h?usp=drive_link" target="_blank" class="drive-btn btn-07">🏭 07. ERP & Prod</a>
+                <a href="https://drive.google.com/drive/folders/1wF99tAUAKY575OBO4kN3Ggu5L2SerF_d?usp=drive_link" target="_blank" class="drive-btn btn-08">👥 08. HR</a>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     st.write("---")
-    st.subheader("📁 Google Drive - Dokument & Mappar")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        # Kolumn 1: 00, 03, 06
-        st.link_button(
-            "👑 00. Ägare",
-            "https://drive.google.com/drive/folders/1Y3G3mbLjB0-yytQVrTLNqG0lUhNSJX3s?usp=drive_link",
-            use_container_width=True,
-        )
-        st.link_button(
-            "📝 03. Mötesprotokoll & Ledning",
-            "https://drive.google.com/drive/folders/1dlH1Vtf8o1b9qEsWnrYYxcx7W-11wQ2u?usp=drive_link",
-            use_container_width=True,
-        )
-        st.link_button(
-            "🤝 06. CRM & Sälj",
-            "https://drive.google.com/drive/folders/1K49xSjbeYKXX1P84pWTibXsl09bC3-2q?usp=drive_link",
-            use_container_width=True,
-        )
-
-    with col2:
-        # Kolumn 2: 01, 04, 07
-        st.link_button(
-            "🏛️ 01. Styrelse",
-            "https://drive.google.com/drive/folders/1J_f2FeSxVoh1lMwZhBhK9B2Jmtms99t5?usp=drive_link",
-            use_container_width=True,
-        )
-        st.link_button(
-            "📋 04. Rutiner & Instruktioner",
-            "https://drive.google.com/drive/folders/1orxyLf4BUO1eIGArEleDBD2_WlHJ85oD?usp=drive_link",
-            use_container_width=True,
-        )
-        st.link_button(
-            "🏭 07. ERP & Produktion",
-            "https://drive.google.com/drive/folders/1JeX24o7uWjIAiCaqWl8B89VsSDqwXX_h?usp=drive_link",
-            use_container_width=True,
-        )
-
-    with col3:
-        # Kolumn 3: 02, 05, 08
-        st.link_button(
-            "🚀 02. Affärsplan & Strategi",
-            "https://drive.google.com/drive/folders/1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw",
-            use_container_width=True,
-        )
-        st.link_button(
-            "🔎 05. Kvalitet & Avvikelser",
-            "https://drive.google.com/drive/folders/1qBWiM-7LKI7rKpkXFSVP2T0TSEIphq1c?usp=drive_link",
-            use_container_width=True,
-        )
-        st.link_button(
-            "👥 08. HR & Personal",
-            "https://drive.google.com/drive/folders/1wF99tAUAKY575OBO4kN3Ggu5L2SerF_d?usp=drive_link",
-            use_container_width=True,
-        )

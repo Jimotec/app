@@ -1,10 +1,10 @@
+import io
 import json
 import os
-import streamlit as st
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import Flow
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaIoBaseUpload
+import streamlit as st
 
 # Konfigurera sidan
 st.set_page_config(page_title="Jimotec AB", layout="wide")
@@ -55,64 +55,34 @@ def safe_page_link(page_path, label, container=st.sidebar):
         container.warning(f"Sidan saknas: {label}")
 
 
-# Hjälpfunktion för uppladdning till Google Drive (OAuth 2.0)
+# Hjälpfunktion för uppladdning till Google Drive (Service Account)
 def spara_till_google_drive(uploaded_file):
-    FOLDER_ID = "1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw"
-    SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-
-    # Om vi redan har OAuth-credentials sparade i sessionen
-    if "oauth_credentials" in st.session_state:
-        creds = Credentials.from_authorized_user_info(
-            st.session_state["oauth_credentials"], SCOPES
+    folder_id = "1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw"
+    try:
+        # Skapar uppkoppling via robotkontot i st.secrets
+        info = st.secrets["gcp_service_account"]
+        creds = service_account.Credentials.from_service_account_info(
+            info, scopes=["https://www.googleapis.com/auth/drive"]
         )
         service = build("drive", "v3", credentials=creds)
-    else:
-        # Konfigurera OAuth från Streamlit Secrets
-        client_config = {
-            "web": {
-                "client_id": st.secrets["oauth"]["client_id"],
-                "client_secret": st.secrets["oauth"]["client_secret"],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [st.secrets["oauth"]["redirect_uri"]],
-            }
+
+        file_metadata = {
+            "name": uploaded_file.name,
+            "parents": [folder_id],
         }
-        flow = Flow.from_client_config(
-            client_config,
-            scopes=SCOPES,
-            redirect_uri=st.secrets["oauth"]["redirect_uri"],
+
+        media = MediaIoBaseUpload(
+            io.BytesIO(uploaded_file.getvalue()),
+            mimetype=uploaded_file.type or "application/octet-stream",
+            resumable=True,
         )
 
-        code = st.query_params.get("code")
-        if code:
-            flow.fetch_token(code=code)
-            creds = flow.credentials
-            st.session_state["oauth_credentials"] = json.loads(creds.to_json())
-            st.query_params.clear()
-            st.rerun()
-
-        auth_url, _ = flow.authorization_url(prompt="consent")
-        st.info("Logga in på Google Drive för att aktivera filuppladdning.")
-        st.link_button("🔑 Logga in på Google Drive", auth_url)
-        return False
-
-    temp_path = f"temp_{uploaded_file.name}"
-    with open(temp_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-
-    try:
-        file_metadata = {"name": uploaded_file.name, "parents": [FOLDER_ID]}
-        media = MediaFileUpload(temp_path, resumable=True)
         service.files().create(
             body=file_metadata, media_body=media, fields="id"
         ).execute()
 
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
         return True
     except Exception as e:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
         st.error(f"Ett fel uppstod vid uppladdning till Google Drive: {e}")
         return False
 
@@ -212,15 +182,12 @@ else:
 
     if st.sidebar.button("Logga ut"):
         st.session_state.logged_in = False
-        if "oauth_credentials" in st.session_state:
-            del st.session_state["oauth_credentials"]
         st.rerun()
 
     # --- Huvudfältet (Mitten på sidan) ---
     st.title("Jimotec AB – Startsida")
     st.success(
-        f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu"
-        " inloggad."
+        f"Välkommen {st.session_state.get('anvandarnamn', '')}! Du är nu inloggad."
     )
 
     st.markdown("---")
@@ -231,8 +198,7 @@ else:
     with col2:
         st.subheader("📁 Ladda upp dokument till Google Drive")
         st.caption(
-            "Dokument som släpps här sparas direkt i mappen **02. Affärsplan &"
-            " Strategi**."
+            "Dokument som släpps här sparas direkt i mappen **02. Affärsplan & Strategi**."
         )
 
         uploaded_files = st.file_uploader(
@@ -246,6 +212,5 @@ else:
                 ok = spara_till_google_drive(uploaded_file)
                 if ok:
                     st.success(
-                        f"✅ **{uploaded_file.name}** har laddats upp till **02."
-                        " Affärsplan & Strategi**!"
+                        f"✅ **{uploaded_file.name}** har laddats upp till **02. Affärsplan & Strategi**!"
                     )

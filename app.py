@@ -125,98 +125,57 @@ else:
     st.write("---")
     st.subheader("📁 Google Drive - Dokument & Mappar")
 
-    # Funktion för att rita ut färgkodade knappar
-    def farg_knapp(lank, ikon, text, bg_color):
-        st.markdown(
-            f"""
-        <a href="{lank}" target="_blank" style="
-            display: block;
-            background-color: {bg_color};
-            color: white;
-            text-align: left;
-            padding: 14px 18px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 15px;
-            font-weight: bold;
-            margin-bottom: 14px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.08);
-            transition: transform 0.1s ease-in-out;
-        ">
-            <span style="font-size: 18px; margin-right: 8px;">{ikon}</span> {text}
-        </a>
-        """,
-            unsafe_allow_html=True,
-        )
-
-    # 3-kolumn layout för knapparna
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        # 00. Ägare
-        farg_knapp(
-            "https://drive.google.com/drive/u/0/folders/1Y3G3mbLjB0-yytQVrTLNqG0IUhNSJX3s",
-            "👑",
-            "00. Ägare",
-            "#c0392b",
+        # 00. Ägare (TESTAS HÄR MED EXAKT LÄNK)
+        st.link_button(
+            "👑 00. Ägare",
+            "https://drive.google.com/drive/folders/1Y3G3mbLjB0-yytQVrTLNqG0lUhNSJX3s?usp=drive_link",
+            use_container_width=True,
         )
-        # 03. Mötesprotokoll & Ledning
-        farg_knapp(
-            "https://drive.google.com/drive/u/0/folders/1dIH1Vtf8o1b9qEsWnrYYxcx7W-11wQ2u",
-            "📝",
-            "03. Mötesprotokoll & Ledning",
-            "#8e44ad",
+        st.link_button(
+            "📝 03. Mötesprotokoll & Ledning",
+            "https://drive.google.com",
+            use_container_width=True,
         )
-        # 06. CRM & Sälj
-        farg_knapp(
-            "https://drive.google.com/drive/u/0/folders/1K49xSjbeYKXX1P84pWTibXsl09bC3-2q",
-            "🤝",
-            "06. CRM & Sälj",
-            "#27ae60",
+        st.link_button(
+            "🤝 06. CRM & Sälj",
+            "https://drive.google.com",
+            use_container_width=True,
         )
 
     with col2:
-        # 01. Styrelse
-        farg_knapp(
-            "https://drive.google.com/drive/u/0/folders/1J_f2FeSxVoh1IMwZhBhK9B2Jmtms99t5",
-            "🏛️",
-            "01. Styrelse",
-            "#d35400",
+        st.link_button(
+            "🏛️ 01. Styrelse",
+            "https://drive.google.com",
+            use_container_width=True,
         )
-        # 04. Rutiner & Instruktioner
-        farg_knapp(
-            "https://drive.google.com/drive/u/0/folders/1orxyLf4BUO1eIGArEleDBD2_WlHJ85oD",
-            "📋",
-            "04. Rutiner & Instruktioner",
-            "#16a085",
+        st.link_button(
+            "📋 04. Rutiner & Instruktioner",
+            "https://drive.google.com",
+            use_container_width=True,
         )
-        # 07. ERP & Produktion
-        farg_knapp(
-            "https://drive.google.com/drive/u/0/folders/1JeX24o7uWjIAiCaqWI8B89VsSDqwXX_h",
-            "🏭",
-            "07. ERP & Produktion",
-            "#2980b9",
+        st.link_button(
+            "🏭 07. ERP & Produktion",
+            "https://drive.google.com",
+            use_container_width=True,
         )
 
     with col3:
         # 02. Affärsplan & Strategi
-        farg_knapp(
-            "https://drive.google.com/drive/u/0/folders/1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw",
-            "🚀",
-            "02. Affärsplan & Strategi",
-            "#2980b9",
+        st.link_button(
+            "🚀 02. Affärsplan & Strategi",
+            "https://drive.google.com/drive/folders/1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw",
+            use_container_width=True,
         )
-        # 05. Kvalitet & Avvikelser
-        farg_knapp(
-            "https://drive.google.com/drive/u/0/folders/1qBWiM-7LKI7rKpkXFSVP2T0TSEIphq1c",
-            "🔎",
-            "05. Kvalitet & Avvikelser",
-            "#f39c12",
+        st.link_button(
+            "🔎 05. Kvalitet & Avvikelser",
+            "https://drive.google.com",
+            use_container_width=True,
         )
-        # 08. HR & Personal
-        farg_knapp(
-            "https://drive.google.com/drive/u/0/folders/1wF99tAUAKY575OBO4kN3Ggu5L2SerF_d",
-            "👥",
-            "08. HR & Personal",
-            "#e84393",
+        st.link_button(
+            "👥 08. HR & Personal",
+            "https://drive.google.com",
+            use_container_width=True,
         )

@@ -72,35 +72,29 @@ else:
     st.sidebar.title("Meny")
     st.sidebar.page_link("app.py", label="Startsida")
 
-    # Hjälpfunktion för att länka säkert utan krasch om fil saknas
+    # Hjälpfunktion för att länka utan krasch
     def try_page_link(path, label):
         if os.path.exists(path):
             st.page_link(path, label=label)
         else:
-            st.caption(f"📄 {label} *(fil saknas: {path})*")
+            st.caption(f"📄 {label} *(saknas)*")
 
-    # Menyer
-    with st.sidebar.expander("Admin", expanded=False):
-        try_page_link("pages/1_start_admin.py", "Admin Start")
-        try_page_link("pages/2_sida_password.py", "Hantera lösenord")
+    # 1. Mötesprotokoll
+    with st.sidebar.expander("Mötesprotokoll", expanded=False):
+        try_page_link("pages/6_motesprotokoll.py", "Mötesprotokoll")
 
-    with st.sidebar.expander("Jimotec", expanded=False):
-        try_page_link("pages/4_jimotec_miro.py", "Miro-analys")
-
+    # 2. Vision
     with st.sidebar.expander("Vision", expanded=False):
-        try_page_link("pages/5_jimotec_ai.py", "AI")
+        try_page_link("pages/4_vision.py", "Vision")
 
+    # 3. Affärsplan
     with st.sidebar.expander("Affärsplan", expanded=False):
         try_page_link(
             "pages/3_affarsplan_sammanfattning.py", "1. Sammanfattning"
         )
         try_page_link("pages/3_affarsplan_ide.py", "2. Affärsidé och vision")
-        try_page_link(
-            "pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning"
-        )
-        try_page_link(
-            "pages/3_affarsplan_marknad.py", "4. Marknad och bransch"
-        )
+        try_page_link("pages/3_affarsplan_foretag.py", "3. Företagsbeskrivning")
+        try_page_link("pages/3_affarsplan_marknad.py", "4. Marknad och bransch")
         try_page_link(
             "pages/3_affarsplan_forsaljning.py",
             "5. Marknadsföring och försäljning",
@@ -112,6 +106,12 @@ else:
             "pages/3_affarsplan_produkter.py", "7. Produkter eller tjänster"
         )
         try_page_link("pages/3_affarsplan_ekonomi.py", "8. Ekonomisk plan")
+        try_page_link(
+            "pages/3_affarsplan_riskanalys.py", "9. Riskanalys"
+        )
+        try_page_link(
+            "pages/3_affarsplan_genomforandeplan.py", "10. Genomförandeplan"
+        )
 
     if st.sidebar.button("Logga ut"):
         st.session_state.logged_in = False

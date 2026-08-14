@@ -127,7 +127,7 @@ else:
     st.write("---")
     st.subheader("📁 Snabbåtkomst till Google Drive")
 
-    # Informationsruta och knapp för 02. Affärsplan & Strategi
+    # Informationsruta med exakt länk till 02. Affärsplan & Strategi
     with st.container(border=True):
         st.markdown("### 📂 02. Affärsplan & Strategi")
         st.write(
@@ -135,5 +135,5 @@ else:
         )
         st.link_button(
             "🚀 Öppna 02. Affärsplan & Strategi",
-            "https://drive.google.com",
+            "https://drive.google.com/drive/u/0/folders/1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw",
         )

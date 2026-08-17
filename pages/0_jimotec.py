@@ -1,7 +1,11 @@
+import io
 import os
 import streamlit as st
 from pypdf import PdfReader
 from docx import Document
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+from google.oauth2 import service_account
 
 st.set_page_config(page_title="Jimotec - Dokument & Filer", layout="wide")
 
@@ -20,126 +24,150 @@ for f in ["Jimotec.jpg", "jimotec.jpg", "Jimotec.png", "jimotec.png"]:
 if logo_file:
     st.image(logo_file, width=180)
 
-st.title("📂 Sammanställ dokument för AI-analys")
-st.caption("Välj en mapp, läs ut all text från alla Word- och PDF-filer och kopiera texten direkt till Gemini.")
+st.title("📂 Sammanställ dokument från Google Drive")
+st.caption("Välj mapp från Google Drive för att automatiskt läsa ut all text och kopiera till Gemini.")
 
-# Basmapp för dina Google Drive-kataloger
-# Ändra bas-sökvägen nedan till där dina Drive-mappar ligger lokalt/monterat
-BAS_SOKVAG = r"G:\Min enhet"
-
-# Lista över standardmapparna
+# Mapp-ID för respektive mapp i Google Drive
 MAPPAR = {
-    "00. Ägare": "00. Ägare",
-    "01. Styrelse (Protokoll m.m.)": "01. Styrelse",
-    "02. Affärsplan": "02. Affärsplan",
-    "03. Möten": "03. Möten",
-    "04. Rutiner": "04. Rutiner",
-    "05. Kvalitet": "05. Kvalitet",
-    "06. CRM & Sälj": "06. CRM & Sälj",
-    "07. ERP & Produktion": "07. ERP & Prod",
-    "08. HR": "08. HR",
-    "Egen sökväg...": "custom"
+    "00. Ägare": "1Y3G3mbLjB0-yytQVrTLNqG0lUhNSJX3s",
+    "01. Styrelse": "1J_f2FeSxVoh1lMwZhBhK9B2Jmtms99t5",
+    "02. Affärsplan & Strategi": "1kRIqLxosFRv7E9-rdtKN_ECGtoLCy1yw",
+    "03. Mötesprotokoll & Ledning": "1dlH1Vtf8o1b9qEsWnrYYxcx7W-11wQ2u",
+    "04. Rutiner & Instruktioner": "1orxyLf4BUO1eIGArEleDBD2_WlHJ85oD",
+    "05. Kvalitet & Avvikelser": "1qBWiM-7LKI7rKpkXFSVP2T0TSEIphq1c",
+    "06. CRM & Sälj": "1K49xSjbeYKXX1P84pWTibXsl09bC3-2q",
+    "07. ERP & Produktion": "1JeX24o7uWjIAiCaqWl8B89VsSDqwXX_h",
+    "08. HR & Personal": "1wF99tAUAKY575OBO4kN3Ggu5L2SerF_d",
 }
 
-vald_etikett = st.selectbox("Välj vilken mapp du vill läsa in:", list(MAPPAR.keys()))
+vald_mapp = st.selectbox("Välj mapp att sammanställa:", list(MAPPAR.keys()))
+folder_id = MAPPAR[vald_mapp]
 
-if MAPPAR[vald_etikett] == "custom":
-    aktiv_mapp = st.text_input("Ange fullständig sökväg till mappen:", value=BAS_SOKVAG)
-else:
-    aktiv_mapp = os.path.join(BAS_SOKVAG, MAPPAR[vald_etikett])
+def get_drive_service():
+    scopes = ["https://www.googleapis.com/auth/drive.readonly"]
+    if "gcp_service_account" in st.secrets:
+        creds = service_account.Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"], scopes=scopes
+        )
+    elif os.path.exists("credentials.json"):
+        creds = service_account.Credentials.from_service_account_file(
+            "credentials.json", scopes=scopes
+        )
+    else:
+        return None
+    return build("drive", "v3", credentials=creds)
 
-st.info(f"📁 **Aktiv sökväg:** `{aktiv_mapp}`")
+def extrahera_text_fran_fil(service, fil):
+    fil_id = fil["id"]
+    fil_namn = fil["name"]
+    mime_type = fil.get("mimeType", "")
+    
+    # 1. Google Docs -> Exportera som ren text direkt
+    if mime_type == "application/vnd.google-apps.document":
+        try:
+            req = service.files().export_media(fileId=fil_id, mimeType="text/plain")
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fh, req)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+            return fh.getvalue().decode("utf-8", errors="ignore")
+        except Exception as e:
+            return f"[Kunde inte exportera Google Doc: {e}]"
 
-# Funktioner för att extrahera text
-def las_pdf(fil_path):
-    text = ""
+    # 2. Övriga binära filer (PDF, DOCX, TXT) -> Ladda ner till minnet
     try:
-        reader = PdfReader(fil_path)
-        for sida in reader.pages:
-            sid_text = sida.extract_text()
-            if sid_text:
-                text += sid_text + "\n"
+        req = service.files().get_media(fileId=fil_id)
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, req)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+        fh.seek(0)
     except Exception as e:
-        text = f"[Kunde inte läsa PDF: {e}]"
+        return f"[Kunde inte hämta filinnehåll: {e}]"
+
+    # Extrahera baserat på filtillägg
+    ext = os.path.splitext(fil_namn)[1].lower()
+    text = ""
+    
+    if ext == ".pdf" or mime_type == "application/pdf":
+        try:
+            reader = PdfReader(fh)
+            for page in reader.pages:
+                t = page.extract_text()
+                if t:
+                    text += t + "\n"
+        except Exception as e:
+            text = f"[Kunde inte läsa PDF: {e}]"
+            
+    elif ext in [".docx", ".doc"]:
+        try:
+            doc = Document(fh)
+            for p in doc.paragraphs:
+                if p.text:
+                    text += p.text + "\n"
+        except Exception as e:
+            text = f"[Kunde inte läsa DOCX: {e}]"
+            
+    elif ext in [".txt", ".md", ".csv", ".json"]:
+        try:
+            text = fh.getvalue().decode("utf-8", errors="ignore")
+        except Exception as e:
+            text = f"[Kunde inte avkoda textfil: {e}]"
+            
     return text
 
-def las_docx(fil_path):
-    text = ""
-    try:
-        doc = Document(fil_path)
-        for p in doc.paragraphs:
-            if p.text:
-                text += p.text + "\n"
-    except Exception as e:
-        text = f"[Kunde inte läsa Word-dokument: {e}]"
-    return text
-
-def las_txt(fil_path):
-    try:
-        with open(fil_path, "r", encoding="utf-8", errors="ignore") as f:
-            return f.read()
-    except Exception as e:
-        return f"[Kunde inte läsa textfil: {e}]"
-
-# Knapp för att starta inläsningen
 if st.button("🚀 Läs in alla dokument i mappen", type="primary"):
-    if not os.path.exists(aktiv_mapp):
-        st.error(f"❌ Mappen hittades inte: `{aktiv_mapp}`. Kontrollera att enheten är monterad/ansluten.")
+    service = get_drive_service()
+    if not service:
+        st.error("❌ Saknar Google Service Account-autentisering (secrets eller credentials.json).")
     else:
         meddelande = st.empty()
-        meddelande.info("Läser in och bearbetar dokument...")
+        meddelande.info(f"Hämtar filer från {vald_mapp}...")
+
+        # Hämta lista med filer i mappen
+        query = f"'{folder_id}' in parents and trashed = false"
+        res = service.files().list(q=query, fields="files(id, name, mimeType)").execute()
+        filer = res.get("files", [])
 
         samlad_text = []
-        antal_filer = 0
+        antal_dokument = 0
 
-        for rot, mappar, filer in os.walk(aktiv_mapp):
-            for fil in filer:
-                full_path = os.path.join(rot, fil)
-                ext = os.path.splitext(fil)[1].lower()
-
-                fil_innehall = ""
-                if ext == ".pdf":
-                    fil_innehall = las_pdf(full_path)
-                elif ext in [".docx", ".doc"]:
-                    fil_innehall = las_docx(full_path)
-                elif ext in [".txt", ".md", ".csv", ".json"]:
-                    fil_innehall = las_txt(full_path)
-                
-                if fil_innehall.strip():
-                    antal_filer += 1
-                    rel_namn = os.path.relpath(full_path, aktiv_mapp)
-                    samlad_text.append(f"==================================================")
-                    samlad_text.append(f"DOKUMENT: {rel_namn}")
-                    samlad_text.append(f"==================================================")
-                    samlad_text.append(fil_innehall.strip())
-                    samlad_text.append("\n")
+        for f in filer:
+            text = extrahera_text_fran_fil(service, f)
+            if text.strip():
+                antal_dokument += 1
+                samlad_text.append("==================================================")
+                samlad_text.append(f"DOKUMENT: {f['name']}")
+                samlad_text.append("==================================================")
+                samlad_text.append(text.strip())
+                samlad_text.append("\n")
 
         meddelande.empty()
 
-        if antal_filer == 0:
-            st.warning("Hittade inga läsbara PDF-, Word- eller textfiler i vald mapp.")
+        if antal_dokument == 0:
+            st.warning(f"Inga läsbara filer hittades i {vald_mapp}.")
         else:
-            komplett_text = "\n".join(samlad_text)
-            st.session_state.inlast_text = komplett_text
-            st.session_state.antal_filer = antal_filer
-            st.success(f"✅ Inläsning klar! Läste in **{antal_filer}** dokument.")
+            st.session_state.inlast_text = "\n".join(samlad_text)
+            st.session_state.antal_filer = antal_dokument
+            st.success(f"✅ Klart! Läste in text från **{antal_dokument}** dokument.")
 
-# Visa resultatet och kopieringsruta om data finns inläst
+# Visa samlat resultat
 if "inlast_text" in st.session_state and st.session_state.inlast_text:
     st.write("---")
-    st.subheader("📋 Sammanställd text")
-    st.caption("Klicka på kopieringsikonen uppe till höger i textrutan nedan eller markera allt och klistra in i Gemini:")
-
+    st.subheader(f"📋 Sammanställd fakta ({st.session_state.get('antal_filer', 0)} filer)")
+    st.caption("Kopiera texten nedan via ikonen uppe i högra hörnet på textrutan och klistra in här i Gemini:")
+    
     st.text_area(
-        label=f"All fakta från {st.session_state.get('antal_filer', 0)} filer:",
+        label="Samlad text:",
         value=st.session_state.inlast_text,
-        height=350
+        height=400
     )
     
-    # Knapp för att ladda ner hela underlaget som en samlad textfil om man vill
     st.download_button(
-        label="💾 Ladda ner allt som en .txt-fil",
+        label="💾 Ladda ner allt som .txt",
         data=st.session_state.inlast_text,
-        file_name=f"sammanstallning_{vald_etikett.replace(' ', '_')}.txt",
+        file_name=f"GoogleDrive_{vald_mapp.replace(' ', '_')}.txt",
         mime="text/plain"
     )

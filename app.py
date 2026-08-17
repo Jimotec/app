@@ -124,15 +124,19 @@ else:
         else:
             st.caption(f"📄 {label} *(saknas)*")
 
-    # 1. Mötesprotokoll
+    # 1. Jimotec
+    with st.sidebar.expander("Jimotec", expanded=False):
+        try_page_link("pages/jimotec.py", "Om Jimotec")
+
+    # 2. Mötesprotokoll
     with st.sidebar.expander("Mötesprotokoll", expanded=False):
         try_page_link("pages/6_motesprotokoll.py", "Mötesprotokoll")
 
-    # 2. Vision
+    # 3. Vision
     with st.sidebar.expander("Vision", expanded=False):
         try_page_link("pages/4_vision.py", "Vision")
 
-    # 3. Affärsplan
+    # 4. Affärsplan
     with st.sidebar.expander("Affärsplan", expanded=False):
         try_page_link(
             "pages/3_affarsplan_sammanfattning.py", "1. Sammanfattning"

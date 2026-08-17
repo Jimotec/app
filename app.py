@@ -126,7 +126,7 @@ else:
 
     # 1. Jimotec
     with st.sidebar.expander("Jimotec", expanded=False):
-        try_page_link("pages/jimotec.py", "Om Jimotec")
+        try_page_link("pages/0_jimotec.py", "Dokument & Filer")
 
     # 2. Mötesprotokoll
     with st.sidebar.expander("Mötesprotokoll", expanded=False):

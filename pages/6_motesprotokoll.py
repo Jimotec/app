@@ -9,7 +9,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Mötesprotokoll - Jimotec", layout="wide")
 
-# CSS för dölja sidonavigering och skapa ett maffigt blått avskiljande band
+# CSS för att dölja sidonavigering och skapa ett maffigt blått avskiljande band
 st.markdown(
     """
     <style>
@@ -52,31 +52,100 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- HANTERA FORMULÄRTÖMNING INNAN ELEMENTEN RITAS ---
-if st.session_state.get("clear_form_flag", False):
-    st.session_state.markdown_text_val = ""
-    st.session_state.datum_tid_val = ""
-    st.session_state.foretag_val = ""
-    st.session_state.plats_val = ""
-    st.session_state.deltagare_val = ""
+# --- INITIALISERING AV SESSION STATE ---
+if "uploaded_images" not in st.session_state:
+    st.session_state.uploaded_images = []
+
+if "atgarder_lista" not in st.session_state:
+    st.session_state.atgarder_lista = [{
+        "aktivitet": "",
+        "ansvarig": "Torbjörn",
+        "datum": date.today() + timedelta(days=7),
+    }]
+
+if "datum_tid_input" not in st.session_state:
+    st.session_state.datum_tid_input = "2026-08-07 10:00"
+
+if "foretag_input" not in st.session_state:
+    st.session_state.foretag_input = "Jimotec AB"
+
+if "plats_input" not in st.session_state:
+    st.session_state.plats_input = "Online / Kontoret"
+
+if "deltagare_input" not in st.session_state:
+    st.session_state.deltagare_input = "Torbjörn Karlsson - VD\nMikael Svensson - Projektledare"
+
+if "markdown_text_area" not in st.session_state:
+    st.session_state.markdown_text_area = ""
+
+
+# --- CALLBACK FÖR JSON-UPPLADDNING (KÖRS FÖRE ALLA WIDGETS SKAPAS) ---
+def ladda_in_json_callback():
+    uploaded_json = st.session_state.get("json_uploader_widget")
+    if uploaded_json is not None:
+        try:
+            raw_bytes = uploaded_json.getvalue()
+            try:
+                content = raw_bytes.decode("utf-8-sig")
+            except UnicodeDecodeError:
+                content = raw_bytes.decode("latin-1")
+            
+            data = json.loads(content)
+
+            if "datum_tid" in data:
+                st.session_state.datum_tid_input = str(data["datum_tid"])
+            if "foretag" in data:
+                st.session_state.foretag_input = str(data["foretag"])
+            if "plats" in data:
+                st.session_state.plats_input = str(data["plats"])
+            if "deltagare" in data:
+                st.session_state.deltagare_input = str(data["deltagare"])
+            if "markdown_text" in data:
+                st.session_state.markdown_text_area = str(data["markdown_text"])
+
+            if "atgarder" in data and isinstance(data["atgarder"], list):
+                nya_atgarder = []
+                for a in data["atgarder"]:
+                    d_val = date.today() + timedelta(days=7)
+                    if "datum" in a and a["datum"]:
+                        try:
+                            d_val = datetime.strptime(a["datum"], "%Y-%m-%d").date()
+                        except Exception:
+                            pass
+                    nya_atgarder.append({
+                        "aktivitet": a.get("aktivitet", ""),
+                        "ansvarig": a.get("ansvarig", "Torbjörn"),
+                        "datum": d_val,
+                    })
+                if nya_atgarder:
+                    st.session_state.atgarder_lista = nya_atgarder
+                    for k in list(st.session_state.keys()):
+                        if k.startswith("akt_") or k.startswith("ans_") or k.startswith("dat_"):
+                            del st.session_state[k]
+                            
+            st.session_state["json_import_status"] = "success"
+        except Exception as e:
+            st.session_state["json_import_status"] = f"error: {e}"
+
+
+# --- CALLBACK FÖR TÖMNING AV FORMULÄR ---
+def tom_formular_callback():
+    st.session_state.datum_tid_input = ""
+    st.session_state.foretag_input = ""
+    st.session_state.plats_input = ""
+    st.session_state.deltagare_input = ""
+    st.session_state.markdown_text_area = ""
     st.session_state.uploaded_images = []
     st.session_state.atgarder_lista = [{
         "aktivitet": "",
         "ansvarig": "",
         "datum": date.today() + timedelta(days=7),
     }]
-
-    # Nollställ widget-nycklar säkert innan de ritas ut
-    for k in ["datum_tid_input", "foretag_input", "plats_input", "deltagare_input", "markdown_text_area"]:
-        if k in st.session_state:
-            st.session_state[k] = ""
-
     for key in list(st.session_state.keys()):
         if key.startswith("akt_") or key.startswith("ans_") or key.startswith("dat_"):
             del st.session_state[key]
+    st.session_state["json_import_status"] = None
 
-    st.session_state["_last_loaded_json"] = None
-    st.session_state["clear_form_flag"] = False
 
 # Sidopanel för navigering
 st.sidebar.title("Meny")
@@ -117,75 +186,17 @@ def oversatt_text(text, target="en"):
         return text
 
 
-# --- SESSION STATES INITIALISERING ---
-if "uploaded_images" not in st.session_state:
-    st.session_state.uploaded_images = []
-
-if "atgarder_lista" not in st.session_state:
-    st.session_state.atgarder_lista = [{
-        "aktivitet": "",
-        "ansvarig": "Torbjörn",
-        "datum": date.today() + timedelta(days=7),
-    }]
-
-if "markdown_text_val" not in st.session_state:
-    st.session_state.markdown_text_val = ""
-
-if "datum_tid_val" not in st.session_state:
-    st.session_state.datum_tid_val = "2026-08-07 10:00"
-
-if "foretag_val" not in st.session_state:
-    st.session_state.foretag_val = "Jimotec AB"
-
-if "plats_val" not in st.session_state:
-    st.session_state.plats_val = "Online / Kontoret"
-
-if "deltagare_val" not in st.session_state:
-    st.session_state.deltagare_val = (
-        "Torbjörn Karlsson - VD\nMikael Svensson - Projektledare"
-    )
-
-# Säker synkning för widgets innan rendering
-if "datum_tid_input" not in st.session_state:
-    st.session_state.datum_tid_input = st.session_state.datum_tid_val
-if "foretag_input" not in st.session_state:
-    st.session_state.foretag_input = st.session_state.foretag_val
-if "plats_input" not in st.session_state:
-    st.session_state.plats_input = st.session_state.plats_val
-if "deltagare_input" not in st.session_state:
-    st.session_state.deltagare_input = st.session_state.deltagare_val
-if "markdown_text_area" not in st.session_state:
-    st.session_state.markdown_text_area = st.session_state.markdown_text_val
-
 # --- SEKTION 1: MÖTESINFO & TEXTINPUT ---
 st.subheader("1. Mötesinformation")
 col_info1, col_info2 = st.columns(2)
 
 with col_info1:
-    datum_tid = st.text_input(
-        "Datum & Tid:",
-        key="datum_tid_input",
-    )
-    foretag = st.text_input(
-        "Företag / Kund:",
-        key="foretag_input",
-    )
+    datum_tid = st.text_input("Datum & Tid:", key="datum_tid_input")
+    foretag = st.text_input("Företag / Kund:", key="foretag_input")
 
 with col_info2:
-    plats = st.text_input(
-        "Plats:",
-        key="plats_input",
-    )
-    deltagare = st.text_area(
-        "Deltagare (en per rad):",
-        height=100,
-        key="deltagare_input",
-    )
-
-st.session_state.datum_tid_val = datum_tid
-st.session_state.foretag_val = foretag
-st.session_state.plats_val = plats
-st.session_state.deltagare_val = deltagare
+    plats = st.text_input("Plats:", key="plats_input")
+    deltagare = st.text_area("Deltagare (en per rad):", height=100, key="deltagare_input")
 
 st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
@@ -194,7 +205,6 @@ markdown_text = st.text_area(
     key="markdown_text_area",
     placeholder="""1. Fel stift\n2. Smeda\n""",
 )
-st.session_state.markdown_text_val = markdown_text
 
 
 # --- SEKTION 3: ÅTGÄRDSLISTA MED OUTLOOK-KNAPP ---
@@ -208,7 +218,7 @@ BEGIN:VTODO
 UID:jimotec-task-{now}@jimotec.se
 DTSTAMP:{now}
 SUMMARY:[Åtgärd Jimotec] {aktivitet_text}
-DESCRIPTION:Ansvarig: {ansvarig_namn}\\nKopplat till möte: {st.session_state.foretag_val}
+DESCRIPTION:Ansvarig: {ansvarig_namn}\\nKopplat till möte: {st.session_state.foretag_input}
 DUE;VALUE=DATE:{due_date}
 STATUS:NEEDS-ACTION
 END:VTODO
@@ -280,6 +290,7 @@ ny_filer = st.file_uploader(
     "Ladda upp bilder till protokollet:",
     type=["jpg", "jpeg", "png"],
     accept_multiple_files=True,
+    key="images_uploader_section4"
 )
 
 if ny_filer:
@@ -605,68 +616,20 @@ with st.container(border=True):
             """
         )
 
-    json_file = st.file_uploader(
-        "📂 Ladda upp sparat protokoll (.json) från AI", type=["json"], key="json_uploader_sektion5"
+    # File uploader med on_change callback (körs innan sidans fält ritas ut)
+    st.file_uploader(
+        "📂 Ladda upp sparat protokoll (.json) från AI",
+        type=["json"],
+        key="json_uploader_widget",
+        on_change=ladda_in_json_callback
     )
 
-    if json_file is not None:
-        file_signature = f"{json_file.name}_{json_file.size}"
-        if st.session_state.get("_last_loaded_json") != file_signature:
-            try:
-                # Säker avkodning som klarar både UTF-8 (med/utan BOM) och Windows ANSI (latin-1)
-                raw_bytes = json_file.getvalue()
-                try:
-                    content = raw_bytes.decode("utf-8-sig")
-                except UnicodeDecodeError:
-                    content = raw_bytes.decode("latin-1")
-                
-                data = json.loads(content)
-
-                if "datum_tid" in data:
-                    st.session_state.datum_tid_val = data["datum_tid"]
-                    st.session_state.datum_tid_input = data["datum_tid"]
-                if "foretag" in data:
-                    st.session_state.foretag_val = data["foretag"]
-                    st.session_state.foretag_input = data["foretag"]
-                if "plats" in data:
-                    st.session_state.plats_val = data["plats"]
-                    st.session_state.plats_input = data["plats"]
-                if "deltagare" in data:
-                    st.session_state.deltagare_val = data["deltagare"]
-                    st.session_state.deltagare_input = data["deltagare"]
-                if "markdown_text" in data:
-                    st.session_state.markdown_text_val = data["markdown_text"]
-                    st.session_state.markdown_text_area = data["markdown_text"]
-
-                if "atgarder" in data and isinstance(data["atgarder"], list):
-                    nya_atgarder = []
-                    for a in data["atgarder"]:
-                        d_val = date.today() + timedelta(days=7)
-                        if "datum" in a and a["datum"]:
-                            try:
-                                d_val = datetime.strptime(
-                                    a["datum"], "%Y-%m-%d"
-                                ).date()
-                            except Exception:
-                                pass
-                        nya_atgarder.append({
-                            "aktivitet": a.get("aktivitet", ""),
-                            "ansvarig": a.get("ansvarig", "Torbjörn"),
-                            "datum": d_val,
-                        })
-                    if nya_atgarder:
-                        st.session_state.atgarder_lista = nya_atgarder
-                        for k in list(st.session_state.keys()):
-                            if k.startswith("akt_") or k.startswith("ans_") or k.startswith("dat_"):
-                                del st.session_state[k]
-
-                st.session_state["_last_loaded_json"] = file_signature
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Fel vid läsning av JSON-fil: {e}")
-
-    if st.session_state.get("_last_loaded_json") is not None and json_file is not None:
+    # Statusmeddelande vid inläsning
+    import_status = st.session_state.get("json_import_status")
+    if import_status == "success":
         st.success("✅ Data importerades från JSON-filen!")
+    elif import_status and import_status.startswith("error:"):
+        st.error(f"❌ Fel vid läsning av JSON-fil: {import_status[7:]}")
 
     st.write("")
 
@@ -705,21 +668,17 @@ with st.container(border=True):
             else:
                 try:
                     with st.spinner("Översätter..."):
-                        st.session_state.markdown_text_val = oversatt_text(
-                            markdown_text, "en"
-                        )
+                        translated_md = oversatt_text(markdown_text, "en")
                         for item in st.session_state.atgarder_lista:
                             if item["aktivitet"]:
-                                item["aktivitet"] = oversatt_text(
-                                    item["aktivitet"], "en"
-                                )
+                                item["aktivitet"] = oversatt_text(item["aktivitet"], "en")
 
                         pdf_data = generera_pdf_jimotec(
                             datum_tid,
                             foretag,
                             plats,
                             deltagare,
-                            st.session_state.markdown_text_val,
+                            translated_md,
                             st.session_state.atgarder_lista,
                             st.session_state.uploaded_images,
                             is_en=True,
@@ -734,6 +693,4 @@ with st.container(border=True):
                     st.error(f"❌ Fel: {e}")
 
     with c3:
-        if st.button("🗑️ Töm formulär", type="primary", key="btn_clear_all"):
-            st.session_state["clear_form_flag"] = True
-            st.rerun()
+        st.button("🗑️ Töm formulär", type="primary", key="btn_clear_all", on_click=tom_formular_callback)

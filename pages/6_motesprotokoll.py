@@ -183,9 +183,7 @@ markdown_text = st.text_area(
     value=st.session_state.markdown_text_val,
     height=200,
     key="markdown_text_area",
-    placeholder="""1. Fel stift
-2. Smeda
-""",
+    placeholder="""1. Fel stift\n2. Smeda\n""",
 )
 st.session_state.markdown_text_val = markdown_text
 
@@ -266,7 +264,7 @@ if st.button("➕ Lägg till", key="btn_add_action"):
 
 st.divider()
 
-# --- SEKTION 2: BILDHANTERING & SORTERING ---
+# --- SEKTION 4: BILDHANTERING & SORTERING ---
 st.subheader("4. Bilder")
 
 ny_filer = st.file_uploader(
@@ -326,7 +324,7 @@ if st.session_state.uploaded_images:
 st.markdown('<div class="blue-thick-band"></div>', unsafe_allow_html=True)
 
 
-# --- SEKTION 4: PDF GENERATOR ---
+# --- SEKTION 5: PDF GENERATOR ---
 class JimotecPDF(FPDF):
 
     def __init__(self, is_en=False, *args, **kwargs):
@@ -601,7 +599,14 @@ with st.container(border=True):
 
     if json_file is not None:
         try:
-            data = json.load(json_file)
+            # Säker avkodning som klarar både UTF-8 (med/utan BOM) och Windows ANSI (latin-1)
+            raw_bytes = json_file.getvalue()
+            try:
+                content = raw_bytes.decode("utf-8-sig")
+            except UnicodeDecodeError:
+                content = raw_bytes.decode("latin-1")
+            
+            data = json.loads(content)
 
             if "datum_tid" in data:
                 st.session_state.datum_tid_val = data["datum_tid"]

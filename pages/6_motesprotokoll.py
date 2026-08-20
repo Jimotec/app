@@ -52,34 +52,30 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- INITIALISERING AV SESSION STATE ---
+# --- INITIALISERING AV SESSION STATE (HELT TOMT VID START) ---
 if "uploaded_images" not in st.session_state:
     st.session_state.uploaded_images = []
 
 if "atgarder_lista" not in st.session_state:
-    st.session_state.atgarder_lista = [{
-        "aktivitet": "",
-        "ansvarig": "Torbjörn",
-        "datum": date.today() + timedelta(days=7),
-    }]
+    st.session_state.atgarder_lista = []
 
 if "datum_tid_input" not in st.session_state:
-    st.session_state.datum_tid_input = "2026-08-07 10:00"
+    st.session_state.datum_tid_input = ""
 
 if "foretag_input" not in st.session_state:
-    st.session_state.foretag_input = "Jimotec AB"
+    st.session_state.foretag_input = ""
 
 if "plats_input" not in st.session_state:
-    st.session_state.plats_input = "Online / Kontoret"
+    st.session_state.plats_input = ""
 
 if "deltagare_input" not in st.session_state:
-    st.session_state.deltagare_input = "Torbjörn Karlsson - VD\nMikael Svensson - Projektledare"
+    st.session_state.deltagare_input = ""
 
 if "markdown_text_area" not in st.session_state:
     st.session_state.markdown_text_area = ""
 
 
-# --- CALLBACK FÖR JSON-UPPLADDNING (KÖRS FÖRE ALLA WIDGETS SKAPAS) ---
+# --- CALLBACK FÖR JSON-UPPLADDNING ---
 def ladda_in_json_callback():
     uploaded_json = st.session_state.get("json_uploader_widget")
     if uploaded_json is not None:
@@ -114,14 +110,13 @@ def ladda_in_json_callback():
                             pass
                     nya_atgarder.append({
                         "aktivitet": a.get("aktivitet", ""),
-                        "ansvarig": a.get("ansvarig", "Torbjörn"),
+                        "ansvarig": a.get("ansvarig", ""),
                         "datum": d_val,
                     })
-                if nya_atgarder:
-                    st.session_state.atgarder_lista = nya_atgarder
-                    for k in list(st.session_state.keys()):
-                        if k.startswith("akt_") or k.startswith("ans_") or k.startswith("dat_"):
-                            del st.session_state[k]
+                st.session_state.atgarder_lista = nya_atgarder
+                for k in list(st.session_state.keys()):
+                    if k.startswith("akt_") or k.startswith("ans_") or k.startswith("dat_"):
+                        del st.session_state[k]
                             
             st.session_state["json_import_status"] = "success"
         except Exception as e:
@@ -136,11 +131,7 @@ def tom_formular_callback():
     st.session_state.deltagare_input = ""
     st.session_state.markdown_text_area = ""
     st.session_state.uploaded_images = []
-    st.session_state.atgarder_lista = [{
-        "aktivitet": "",
-        "ansvarig": "",
-        "datum": date.today() + timedelta(days=7),
-    }]
+    st.session_state.atgarder_lista = []
     for key in list(st.session_state.keys()):
         if key.startswith("akt_") or key.startswith("ans_") or key.startswith("dat_"):
             del st.session_state[key]
@@ -153,9 +144,7 @@ if os.path.exists("app.py"):
     st.sidebar.page_link("app.py", label="👈 Tillbaka till Startsida")
 
 st.title("📋 Skapa Mötesprotokoll")
-st.write(
-    "Fyll i mötesinformation, klistra in din text och koppla bilderna direkt till punkterna."
-)
+st.write("Fyll i mötesinformation, klistra in din text och koppla bilderna direkt till punkterna.")
 
 
 # --- INBYGGDA ÖVERSÄTTNINGSFUNKTIONEN ---
@@ -191,19 +180,19 @@ st.subheader("1. Mötesinformation")
 col_info1, col_info2 = st.columns(2)
 
 with col_info1:
-    datum_tid = st.text_input("Datum & Tid:", key="datum_tid_input")
+    datum_tid = st.text_input("Datum & Tid:", key="datum_tid_input", placeholder="YYYY-MM-DD HH:MM")
     foretag = st.text_input("Företag / Kund:", key="foretag_input")
 
 with col_info2:
     plats = st.text_input("Plats:", key="plats_input")
-    deltagare = st.text_area("Deltagare (en per rad):", height=100, key="deltagare_input")
+    deltagare = st.text_area("Deltagare (en per rad):", height=100, key="deltagare_input", placeholder="Namn 1 - Roll 1\nNamn 2 - Roll 2")
 
 st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
     "Minnesanteckningar:",
     height=200,
     key="markdown_text_area",
-    placeholder="""1. Fel stift\n2. Smeda\n""",
+    placeholder="1. Första punkten\n2. Andra punkten\n3. Tredje punkten",
 )
 
 
@@ -273,10 +262,10 @@ for idx, item in enumerate(st.session_state.atgarder_lista):
 
 st.session_state.atgarder_lista = ny_atgarder
 
-if st.button("➕ Lägg till", key="btn_add_action"):
+if st.button("➕ Lägg till åtgärd", key="btn_add_action"):
     st.session_state.atgarder_lista.append({
         "aktivitet": "",
-        "ansvarig": "Torbjörn",
+        "ansvarig": "",
         "datum": date.today() + timedelta(days=7),
     })
     st.rerun()
@@ -403,7 +392,6 @@ def generera_pdf_jimotec(
             return ""
         return str(t).encode("latin-1", "replace").decode("latin-1")
 
-    # Språkanpassade rubriker
     lbl_date = "DATE & TIME:" if is_en else "DATUM & TID:"
     lbl_comp = "COMPANY:" if is_en else "FÖRETAG:"
     lbl_loc = "LOCATION:" if is_en else "PLATS:"
@@ -488,7 +476,6 @@ def generera_pdf_jimotec(
         for rad in rader:
             rad_text = rad
 
-            # Översätt varje rad om engelska är valt
             if is_en:
                 rad_text = oversatt_text(rad_text, "en")
 
@@ -588,9 +575,11 @@ with st.container(border=True):
             **Kopiera texten nedan och klistra in till AI tillsammans med dina anteckningar/bild:**
             
             ```text
-            Du är en assistent som tolkar handskrivna mötesanteckningar och skapar en nedladdningsbar .json-fil som ska importeras i Streamlit-appen 'Mötesprotokoll - Jimotec'.
+            Du är en assistent som tolkar handskrivna mötesanteckningar från uppladdade bilder/dokument och skapar en nedladdningsbar .json-fil som ska importeras i Streamlit-appen 'Mötesprotokoll - Jimotec'.
 
-            Skapa en nedladdningsbar JSON-fil med exakt denna struktur:
+            ARBETSFÖRLOPP:
+            1. Invänta bild/underlag: Om ingen bild eller anteckningar har bifogats i meddelandet, generera ALDRIG mockdata eller en JSON-fil. Svara istället kort och be användaren ladda upp bilden/anteckningarna.
+            2. Generera fil: När bilden/anteckningarna har laddats upp, tolka innehållet och skapa en nedladdningsbar JSON-fil med exakt denna struktur:
             {
               "datum_tid": "YYYY-MM-DD HH:MM",
               "foretag": "Företagsnamn",
@@ -607,16 +596,16 @@ with st.container(border=True):
             }
 
             VIKTIGA REGLER FÖR AI:
-            1. Generera en nedladdningsbar fil (inte bara rå kod i text).
+            1. Generera alltid en nedladdningsbar fil (inte bara rå kod i text) när underlaget laddats upp.
             2. Alla punkter i 'markdown_text' MÅSTE numreras '1.', '2.', '3.' osv. på varsin rad.
             3. Varje deltagare i 'deltagare' ska ligga på en egen rad separerade med radbrytning (\\n).
             4. Åtgärdsdatum ska ha formatet YYYY-MM-DD (eller lämna tomt om okänt).
-            5. Skriv alltid som avslutande fras: "Ladda ner dina mötesanteckningar".
+            5. Skriv alltid som avslutande fras när filen genererats: "Ladda ner dina mötesanteckningar".
             ```
             """
         )
 
-    # File uploader med on_change callback (körs innan sidans fält ritas ut)
+    # File uploader med on_change callback
     st.file_uploader(
         "📂 Ladda upp sparat protokoll (.json) från AI",
         type=["json"],

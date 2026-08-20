@@ -75,6 +75,7 @@ if st.session_state.get("clear_form_flag", False):
         if key.startswith("akt_") or key.startswith("ans_") or key.startswith("dat_"):
             del st.session_state[key]
 
+    st.session_state["_last_loaded_json"] = None
     st.session_state["clear_form_flag"] = False
 
 # Sidopanel för navigering
@@ -84,8 +85,7 @@ if os.path.exists("app.py"):
 
 st.title("📋 Skapa Mötesprotokoll")
 st.write(
-    "Fyll i mötesinformation, klistra in din text och koppla bilderna direkt till"
-    " punkterna."
+    "Fyll i mötesinformation, klistra in din text och koppla bilderna direkt till punkterna."
 )
 
 
@@ -145,6 +145,18 @@ if "deltagare_val" not in st.session_state:
         "Torbjörn Karlsson - VD\nMikael Svensson - Projektledare"
     )
 
+# Säker synkning för widgets innan rendering
+if "datum_tid_input" not in st.session_state:
+    st.session_state.datum_tid_input = st.session_state.datum_tid_val
+if "foretag_input" not in st.session_state:
+    st.session_state.foretag_input = st.session_state.foretag_val
+if "plats_input" not in st.session_state:
+    st.session_state.plats_input = st.session_state.plats_val
+if "deltagare_input" not in st.session_state:
+    st.session_state.deltagare_input = st.session_state.deltagare_val
+if "markdown_text_area" not in st.session_state:
+    st.session_state.markdown_text_area = st.session_state.markdown_text_val
+
 # --- SEKTION 1: MÖTESINFO & TEXTINPUT ---
 st.subheader("1. Mötesinformation")
 col_info1, col_info2 = st.columns(2)
@@ -152,22 +164,20 @@ col_info1, col_info2 = st.columns(2)
 with col_info1:
     datum_tid = st.text_input(
         "Datum & Tid:",
-        value=st.session_state.datum_tid_val,
         key="datum_tid_input",
     )
     foretag = st.text_input(
         "Företag / Kund:",
-        value=st.session_state.foretag_val,
         key="foretag_input",
     )
 
 with col_info2:
     plats = st.text_input(
-        "Plats:", value=st.session_state.plats_val, key="plats_input"
+        "Plats:",
+        key="plats_input",
     )
     deltagare = st.text_area(
         "Deltagare (en per rad):",
-        value=st.session_state.deltagare_val,
         height=100,
         key="deltagare_input",
     )
@@ -180,7 +190,6 @@ st.session_state.deltagare_val = deltagare
 st.subheader("2. Minnesanteckningar & Punkter")
 markdown_text = st.text_area(
     "Minnesanteckningar:",
-    value=st.session_state.markdown_text_val,
     height=200,
     key="markdown_text_area",
     placeholder="""1. Fel stift\n2. Smeda\n""",
@@ -286,8 +295,7 @@ if ny_filer:
 if st.session_state.uploaded_images:
     st.write("**Sortera och granska bilder:**")
     st.caption(
-        "Ändra numret först i raden om du vill skifta vilken bild som hamnar"
-        " under vilken punkt."
+        "Ändra numret först i raden om du vill skifta vilken bild som hamnar under vilken punkt."
     )
 
     for index, img_obj in enumerate(st.session_state.uploaded_images):
@@ -309,8 +317,7 @@ if st.session_state.uploaded_images:
         with col_txt:
             st.write("")
             st.info(
-                f"Bild {img_obj['order']} -> Kopplas till Punkt"
-                f" {img_obj['order']}"
+                f"Bild {img_obj['order']} -> Kopplas till Punkt {img_obj['order']}"
             )
 
     st.session_state.uploaded_images.sort(key=lambda x: x["order"])
@@ -570,14 +577,15 @@ with st.container(border=True):
             **Kopiera texten nedan och klistra in till AI tillsammans med dina anteckningar/bild:**
             
             ```text
-            Du är en assistent som tolkar handskrivna mötesanteckningar och skapar en JSON-fil som ska importeras i Streamlit-appen 'Mötesprotokoll - Jimotec'.
-            Generera enbart en nedladdningsbar .json-fil med följande nycklar:
+            Du är en assistent som tolkar handskrivna mötesanteckningar och skapar en nedladdningsbar .json-fil som ska importeras i Streamlit-appen 'Mötesprotokoll - Jimotec'.
+
+            Skapa en nedladdningsbar JSON-fil med exakt denna struktur:
             {
               "datum_tid": "YYYY-MM-DD HH:MM",
               "foretag": "Företagsnamn",
               "plats": "Plats",
               "deltagare": "Namn 1 - Roll 1\\nNamn 2 - Roll 2",
-              "markdown_text": "1. Punkt 1\\n2. Punkt 2\\n3. Punkt 3",
+              "markdown_text": "1. Första punkten\\n2. Andra punkten\\n3. Tredje punkten",
               "atgarder": [
                 {
                   "aktivitet": "Beskrivning av åtgärd",
@@ -586,66 +594,79 @@ with st.container(border=True):
                 }
               ]
             }
-            VIKTIGT: 
-            1. Alla minnesanteckningar MÅSTE vara numrerade som '1.', '2.', '3.' osv. i markdown_text så att bildkopplingen fungerar.
-            2. Säg alltid till mig att "Ladda ner dina mötesanteckningar" när filen är klar.
+
+            VIKTIGA REGLER FÖR AI:
+            1. Generera en nedladdningsbar fil (inte bara rå kod i text).
+            2. Alla punkter i 'markdown_text' MÅSTE numreras '1.', '2.', '3.' osv. på varsin rad.
+            3. Varje deltagare i 'deltagare' ska ligga på en egen rad separerade med radbrytning (\\n).
+            4. Åtgärdsdatum ska ha formatet YYYY-MM-DD (eller lämna tomt om okänt).
+            5. Skriv alltid som avslutande fras: "Ladda ner dina mötesanteckningar".
             ```
             """
         )
 
     json_file = st.file_uploader(
-        "📂 Ladda upp sparat protokoll (.json) från AI", type=["json"]
+        "📂 Ladda upp sparat protokoll (.json) från AI", type=["json"], key="json_uploader_sektion5"
     )
 
     if json_file is not None:
-        try:
-            # Säker avkodning som klarar både UTF-8 (med/utan BOM) och Windows ANSI (latin-1)
-            raw_bytes = json_file.getvalue()
+        file_signature = f"{json_file.name}_{json_file.size}"
+        if st.session_state.get("_last_loaded_json") != file_signature:
             try:
-                content = raw_bytes.decode("utf-8-sig")
-            except UnicodeDecodeError:
-                content = raw_bytes.decode("latin-1")
-            
-            data = json.loads(content)
+                # Säker avkodning som klarar både UTF-8 (med/utan BOM) och Windows ANSI (latin-1)
+                raw_bytes = json_file.getvalue()
+                try:
+                    content = raw_bytes.decode("utf-8-sig")
+                except UnicodeDecodeError:
+                    content = raw_bytes.decode("latin-1")
+                
+                data = json.loads(content)
 
-            if "datum_tid" in data:
-                st.session_state.datum_tid_val = data["datum_tid"]
-                st.session_state.datum_tid_input = data["datum_tid"]
-            if "foretag" in data:
-                st.session_state.foretag_val = data["foretag"]
-                st.session_state.foretag_input = data["foretag"]
-            if "plats" in data:
-                st.session_state.plats_val = data["plats"]
-                st.session_state.plats_input = data["plats"]
-            if "deltagare" in data:
-                st.session_state.deltagare_val = data["deltagare"]
-                st.session_state.deltagare_input = data["deltagare"]
-            if "markdown_text" in data:
-                st.session_state.markdown_text_val = data["markdown_text"]
-                st.session_state.markdown_text_area = data["markdown_text"]
+                if "datum_tid" in data:
+                    st.session_state.datum_tid_val = data["datum_tid"]
+                    st.session_state.datum_tid_input = data["datum_tid"]
+                if "foretag" in data:
+                    st.session_state.foretag_val = data["foretag"]
+                    st.session_state.foretag_input = data["foretag"]
+                if "plats" in data:
+                    st.session_state.plats_val = data["plats"]
+                    st.session_state.plats_input = data["plats"]
+                if "deltagare" in data:
+                    st.session_state.deltagare_val = data["deltagare"]
+                    st.session_state.deltagare_input = data["deltagare"]
+                if "markdown_text" in data:
+                    st.session_state.markdown_text_val = data["markdown_text"]
+                    st.session_state.markdown_text_area = data["markdown_text"]
 
-            if "atgarder" in data and isinstance(data["atgarder"], list):
-                nya_atgarder = []
-                for a in data["atgarder"]:
-                    d_val = date.today() + timedelta(days=7)
-                    if "datum" in a and a["datum"]:
-                        try:
-                            d_val = datetime.strptime(
-                                a["datum"], "%Y-%m-%d"
-                            ).date()
-                        except Exception:
-                            pass
-                    nya_atgarder.append({
-                        "aktivitet": a.get("aktivitet", ""),
-                        "ansvarig": a.get("ansvarig", "Torbjörn"),
-                        "datum": d_val,
-                    })
-                if nya_atgarder:
-                    st.session_state.atgarder_lista = nya_atgarder
+                if "atgarder" in data and isinstance(data["atgarder"], list):
+                    nya_atgarder = []
+                    for a in data["atgarder"]:
+                        d_val = date.today() + timedelta(days=7)
+                        if "datum" in a and a["datum"]:
+                            try:
+                                d_val = datetime.strptime(
+                                    a["datum"], "%Y-%m-%d"
+                                ).date()
+                            except Exception:
+                                pass
+                        nya_atgarder.append({
+                            "aktivitet": a.get("aktivitet", ""),
+                            "ansvarig": a.get("ansvarig", "Torbjörn"),
+                            "datum": d_val,
+                        })
+                    if nya_atgarder:
+                        st.session_state.atgarder_lista = nya_atgarder
+                        for k in list(st.session_state.keys()):
+                            if k.startswith("akt_") or k.startswith("ans_") or k.startswith("dat_"):
+                                del st.session_state[k]
 
-            st.success("✅ Data importerades från JSON-filen!")
-        except Exception as e:
-            st.error(f"❌ Fel vid läsning av JSON-fil: {e}")
+                st.session_state["_last_loaded_json"] = file_signature
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Fel vid läsning av JSON-fil: {e}")
+
+    if st.session_state.get("_last_loaded_json") is not None and json_file is not None:
+        st.success("✅ Data importerades från JSON-filen!")
 
     st.write("")
 

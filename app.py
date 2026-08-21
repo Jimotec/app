@@ -56,39 +56,41 @@ st.markdown(
     .btn-07 { background-color: #34495E; } /* Stålgrå */
     .btn-08 { background-color: #E67E22; } /* Bärnsten */
 
-    /* Styling för produkt-/verktygskort på startsidan */
-    .app-card {
-        background-color: #f8f9fa;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 20px;
-        max-width: 380px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        transition: all 0.2s ease-in-out;
-    }
-    .app-card:hover {
-        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-    }
-    .app-btn {
+    /* Klickbar bildknapp för appar/verktyg */
+    .image-app-btn {
         display: inline-flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        width: 100%;
-        background-color: #1f2937;
-        color: #ffffff !important;
-        font-weight: 600;
-        font-size: 1rem;
-        padding: 12px 18px;
-        border-radius: 8px;
+        padding: 16px;
+        background: #ffffff;
+        border: 2px solid #e2e8f0;
+        border-radius: 16px;
         text-decoration: none !important;
-        margin-top: 15px;
-        transition: background-color 0.2s ease-in-out;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+        transition: all 0.25s ease;
+        width: 170px;
+        cursor: pointer;
     }
-    .app-btn:hover {
-        background-color: #374151;
-        color: #ffffff !important;
+
+    .image-app-btn:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+        border-color: #2563eb;
+    }
+
+    .image-app-btn img {
+        width: 75px;
+        height: 75px;
+        object-fit: contain;
+        margin-bottom: 8px;
+    }
+
+    .image-app-btn span {
+        color: #1e293b;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-align: center;
     }
     </style>
     """,
@@ -228,23 +230,13 @@ else:
 
     st.write("---")
 
-    # Applikationer & Verktyg på startsidan
-    st.subheader("🛠️ Interna Verktyg & Produkter")
-
-    col_app1, _ = st.columns([1, 2])
-
-    with col_app1:
-        st.markdown(
-            """
-            <div class="app-card">
-                <h3 style="margin-top: 0; color: #1e293b;">📑 Bearbeta PDF</h3>
-                <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 0;">
-                    Verktyg för ritnings- och pdf-bearbetning.
-                </p>
-                <a href="http://100.90.128.75:8501/" target="_blank" class="app-btn">
-                    ⚙️ Öppna Bearbeta PDF
-                </a>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    # Klickbar bildikon på startsidan
+    st.markdown(
+        """
+        <a href="http://100.90.128.75:8501/" target="_blank" class="image-app-btn">
+            <img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" alt="Bearbeta PDF" />
+            <span>Bearbeta PDF</span>
+        </a>
+        """,
+        unsafe_allow_html=True,
+    )

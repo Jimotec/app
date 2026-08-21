@@ -55,6 +55,41 @@ st.markdown(
     .btn-06 { background-color: #C0392B; } /* Röd */
     .btn-07 { background-color: #34495E; } /* Stålgrå */
     .btn-08 { background-color: #E67E22; } /* Bärnsten */
+
+    /* Styling för produkt-/verktygskort på startsidan */
+    .app-card {
+        background-color: #f8f9fa;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        max-width: 380px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease-in-out;
+    }
+    .app-card:hover {
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    .app-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        background-color: #1f2937;
+        color: #ffffff !important;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 12px 18px;
+        border-radius: 8px;
+        text-decoration: none !important;
+        margin-top: 15px;
+        transition: background-color 0.2s ease-in-out;
+    }
+    .app-btn:hover {
+        background-color: #374151;
+        color: #ffffff !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -192,3 +227,24 @@ else:
         )
 
     st.write("---")
+
+    # Applikationer & Verktyg på startsidan
+    st.subheader("🛠️ Interna Verktyg & Produkter")
+
+    col_app1, _ = st.columns([1, 2])
+
+    with col_app1:
+        st.markdown(
+            """
+            <div class="app-card">
+                <h3 style="margin-top: 0; color: #1e293b;">📑 Bearbeta PDF</h3>
+                <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 0;">
+                    Verktyg för ritnings- och pdf-bearbetning.
+                </p>
+                <a href="http://100.90.128.75:8501/" target="_blank" class="app-btn">
+                    ⚙️ Öppna Bearbeta PDF
+                </a>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )

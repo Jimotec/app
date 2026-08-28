@@ -10,6 +10,7 @@ import cadquery as cq
 st.set_page_config(page_title="Jimotec Verktyg", layout="wide")
 
 BASE_DIR = r"C:\Jimotec\Kund pdf"
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Välj funktion
 val_program = st.radio(
@@ -21,12 +22,16 @@ val_program = st.radio(
 st.markdown("---")
 
 if val_program == "⚙️ Beredning & Detaljhantering":
-    beredning_fil = os.path.join(BASE_DIR, "beredning.py")
+    # Letar efter beredningsfilen i samma mapp (pages)
+    beredning_fil = os.path.join(CURRENT_DIR, "5_beredning.py")
+    if not os.path.exists(beredning_fil):
+        beredning_fil = os.path.join(CURRENT_DIR, "beredning.py")
+
     if os.path.exists(beredning_fil):
         with open(beredning_fil, "r", encoding="utf-8") as f:
             exec(f.read())
     else:
-        st.error(f"Kunde inte hitta filen: {beredning_fil}")
+        st.error(f"Kunde inte hitta beredningsfilen i mappen: {CURRENT_DIR}")
 else:
     OUTPUT_FOLDER = os.path.join(BASE_DIR, "Klara")
     TEMPLATES_DIR = os.path.join(BASE_DIR, "Mallar")

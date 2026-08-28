@@ -4,8 +4,8 @@ import streamlit as st
 
 st.set_page_config(page_title="Artikelregister - Jimotec AB", layout="wide")
 
-# Sökväg till sparade beredningar på C:
-REGISTER_PATH = r"C:\Jimotec\Kund pdf\Klara_Beredningar"
+# Sökväg till Y:
+REGISTER_PATH = r"Y:\Artikelregister"
 
 # CSS
 st.markdown(
@@ -163,8 +163,7 @@ if os.path.exists(REGISTER_PATH):
     except Exception as e:
         st.error(f"Fel vid inläsning: {e}")
 else:
-    os.makedirs(REGISTER_PATH, exist_ok=True)
-    st.info(f"Mappen `{REGISTER_PATH}` har skapats.")
+    st.error(f"Sökvägen `{REGISTER_PATH}` hittades inte. Kontrollera att RaiDrive är ansluten.")
 
 col_sok, col_antal = st.columns([4, 1])
 with col_sok:
@@ -198,7 +197,7 @@ col6.markdown("**Åtgärd**")
 st.markdown("<hr style='margin-top: -5px; margin-bottom: 10px;'>", unsafe_allow_html=True)
 
 if not filtrerade:
-    st.info("Inga artiklar hittades.")
+    st.info("Inga artiklar matchade sökningen.")
 else:
     for row in filtrerade:
         c1, c2, c3, c4, c5, c6 = st.columns([2, 3, 2, 2.5, 1, 1.5])

@@ -56,6 +56,14 @@ st.markdown(
     .btn-07 { background-color: #34495E; } /* Stålgrå */
     .btn-08 { background-color: #E67E22; } /* Bärnsten */
 
+    /* Behållare för klickbara app-knappar på startsidan */
+    .apps-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 10px;
+    }
+
     /* Klickbar bildknapp för appar/verktyg */
     .image-app-btn {
         display: inline-flex;
@@ -164,6 +172,7 @@ else:
     # 1. Jimotec
     with st.sidebar.expander("Jimotec", expanded=False):
         try_page_link("pages/0_jimotec.py", "Dokument & Filer")
+        try_page_link("pages/1_Sammanstallning_artikel.py", "Sammanställning Artikel")
 
     # 2. Mötesprotokoll
     with st.sidebar.expander("Mötesprotokoll", expanded=False):
@@ -230,13 +239,19 @@ else:
 
     st.write("---")
 
-    # Klickbar bildikon på startsidan
+    # Klickbara bildikoner på startsidan
     st.markdown(
         """
-        <a href="http://100.90.128.75:8501/" target="_blank" class="image-app-btn">
-            <img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" alt="Bearbeta PDF" />
-            <span>Bearbeta PDF</span>
-        </a>
+        <div class="apps-grid">
+            <a href="http://100.90.128.75:8501/" target="_blank" class="image-app-btn">
+                <img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" alt="Bearbeta PDF" />
+                <span>Bearbeta PDF</span>
+            </a>
+            <a href="/1_Sammanstallning_artikel" target="_self" class="image-app-btn">
+                <img src="https://cdn-icons-png.flaticon.com/512/2921/2921226.png" alt="Sammanställning Artikel" />
+                <span>Sammanställning Artikel</span>
+            </a>
+        </div>
         """,
         unsafe_allow_html=True,
     )

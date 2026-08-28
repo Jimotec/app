@@ -56,14 +56,6 @@ st.markdown(
     .btn-07 { background-color: #34495E; } /* Stålgrå */
     .btn-08 { background-color: #E67E22; } /* Bärnsten */
 
-    /* Behållare för klickbara app-knappar på startsidan */
-    .apps-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        margin-top: 10px;
-    }
-
     /* Klickbar bildknapp för appar/verktyg */
     .image-app-btn {
         display: inline-flex;
@@ -170,7 +162,7 @@ else:
             st.caption(f"📄 {label} *(saknas)*")
 
     # 1. Jimotec
-    with st.sidebar.expander("Jimotec", expanded=False):
+    with st.sidebar.expander("Jimotec", expanded=True):
         try_page_link("pages/0_jimotec.py", "Dokument & Filer")
         try_page_link("pages/1_Sammanstallning_artikel.py", "Sammanställning Artikel")
 
@@ -219,7 +211,6 @@ else:
         st.success(f"Inloggad som: **{st.session_state.get('anvandarnamn', '')}**")
 
     with col_knappar:
-        # Små färgade knappar samlade på rad till höger
         st.markdown(
             """
             <div class="drive-buttons-container">
@@ -239,19 +230,29 @@ else:
 
     st.write("---")
 
-    # Klickbara bildikoner på startsidan
-    st.markdown(
-        """
-        <div class="apps-grid">
+    # App-kort / Klickbara verktyg
+    col_app1, col_app2, col_empty = st.columns([1, 1, 3])
+
+    with col_app1:
+        st.markdown(
+            """
             <a href="http://100.90.128.75:8501/" target="_blank" class="image-app-btn">
                 <img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" alt="Bearbeta PDF" />
                 <span>Bearbeta PDF</span>
             </a>
-            <a href="/1_Sammanstallning_artikel" target="_self" class="image-app-btn">
-                <img src="https://cdn-icons-png.flaticon.com/512/2921/2921226.png" alt="Sammanställning Artikel" />
-                <span>Sammanställning Artikel</span>
-            </a>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_app2:
+        # Intern Streamlit-knapp som öppnar filen direkt
+        st.markdown(
+            """
+            <div style="display:flex; justify-content:center; align-items:center; margin-bottom:8px;">
+                <img src="https://cdn-icons-png.flaticon.com/512/2921/2921226.png" width="75" height="75" style="object-fit:contain;" />
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("📋 Öppna Sammanställning", use_container_width=True, type="primary"):
+            st.switch_page("pages/1_Sammanstallning_artikel.py")

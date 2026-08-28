@@ -53,18 +53,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Sökvägslogik: Server (Y:) i första hand, annars Lokal (C:)
-SERVER_PATH = r"Y:\Artikelregister"
-LOCAL_PATH = r"C:\Jimotec\Kund pdf\Klara_Beredningar"
-
-if os.path.exists(SERVER_PATH):
-    REGISTER_PATH = SERVER_PATH
-elif os.path.exists(LOCAL_PATH):
-    REGISTER_PATH = LOCAL_PATH
-else:
-    REGISTER_PATH = SERVER_PATH
-
-# Logotyp och sidomeny
+# Meny & Logga
 logo_file = None
 for f in ["jimotec.jpg", "Jimotec.jpg", "jimotec.png", "Jimotec.png"]:
     if os.path.exists(f):
@@ -91,11 +80,10 @@ with st.sidebar.expander("Jimotec", expanded=True):
 with st.sidebar.expander("Mötesprotokoll", expanded=False):
     try_page_link("pages/6_motesprotokoll.py", "Mötesprotokoll")
 
-# Toppsektion & Drive-knappar
+# Header
 col_head, col_drives = st.columns([1.2, 2.8])
 with col_head:
     st.title("📦 Artikelregister")
-    st.caption(f"Aktiv sökväg: `{REGISTER_PATH}`")
 
 with col_drives:
     st.markdown(
@@ -116,6 +104,23 @@ with col_drives:
     )
 
 st.write("---")
+
+# Kontrollera möjliga sökvägar dynamiskt
+kandidater = [
+    r"Y:\Artikelregister",
+    r"Y:",
+    r"C:\Jimotec\Kund pdf\Klara_Beredningar",
+    r"C:\Jimotec\Kund pdf\Klara"
+]
+
+hittad_path = ""
+for p in kandidater:
+    if os.path.exists(p):
+        hittad_path = p
+        break
+
+valda_sokvag = st.sidebar.text_input("📂 Sökväg till Artikelregister:", value=hittad_path if hittad_path else r"Y:\Artikelregister")
+REGISTER_PATH = valda_sokvag.strip()
 
 def parse_underlag(filepath):
     data = {"Artnr": "", "Benämning": "", "Ritningsnr": "", "Material": "", "Revision": ""}
@@ -169,9 +174,9 @@ if os.path.exists(REGISTER_PATH):
                     "revision": info["Revision"]
                 })
     except Exception as e:
-        st.error(f"Fel vid inläsning av register: {e}")
+        st.error(f"Fel vid inläsning: {e}")
 else:
-    st.error(f"Kunde varken hitta `{SERVER_PATH}` eller `{LOCAL_PATH}`.")
+    st.error(f"Sökvägen `{REGISTER_PATH}` hittades inte. Kontrollera att RaiDrive är ansluten och enheten är monterad.")
 
 col_sok, col_antal = st.columns([4, 1])
 with col_sok:
@@ -194,7 +199,6 @@ else:
 
 st.caption(f"Visar {len(filtrerade)} st artiklar")
 
-# Tabellhuvud
 col1, col2, col3, col4, col5, col6 = st.columns([2, 3, 2, 2.5, 1, 1.5])
 col1.markdown("**Artikelnummer**")
 col2.markdown("**Benämning**")
@@ -205,7 +209,7 @@ col6.markdown("**Åtgärd**")
 st.markdown("<hr style='margin-top: -5px; margin-bottom: 10px;'>", unsafe_allow_html=True)
 
 if not filtrerade:
-    st.info("Inga artiklar matchade sökningen.")
+    st.info("Inga artiklar hittades.")
 else:
     for row in filtrerade:
         c1, c2, c3, c4, c5, c6 = st.columns([2, 3, 2, 2.5, 1, 1.5])
@@ -217,4 +221,5 @@ else:
         
         if c6.button("Öppna ➡️", key=f"btn_{row['mappnamn']}"):
             st.session_state["vald_artikel"] = row["mappnamn"]
+            st.session_state["register_base_path"] = REGISTER_PATH
             st.switch_page("pages/2_Sammanstallning_artikel.py")

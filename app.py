@@ -164,7 +164,7 @@ else:
     # 1. Jimotec
     with st.sidebar.expander("Jimotec", expanded=True):
         try_page_link("pages/0_jimotec.py", "Dokument & Filer")
-        try_page_link("pages/1_Sammanstallning_artikel.py", "Sammanställning Artikel")
+        try_page_link("pages/1_Artikelregister.py", "Artikelregister")
 
     # 2. Mötesprotokoll
     with st.sidebar.expander("Mötesprotokoll", expanded=False):
@@ -245,7 +245,6 @@ else:
         )
 
     with col_app2:
-        # Intern Streamlit-knapp som öppnar filen direkt
         st.markdown(
             """
             <div style="display:flex; justify-content:center; align-items:center; margin-bottom:8px;">
@@ -254,5 +253,5 @@ else:
             """,
             unsafe_allow_html=True,
         )
-        if st.button("📋 Öppna Sammanställning", use_container_width=True, type="primary"):
-            st.switch_page("pages/1_Sammanstallning_artikel.py")
+        if st.button("📦 Öppna Artikelregister", use_container_width=True, type="primary"):
+            st.switch_page("pages/1_Artikelregister.py")

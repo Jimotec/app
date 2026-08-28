@@ -59,10 +59,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Sökvägar till artikelregistret
-REMOTE_PATH = r"Y:\Artikelregister"
-LOCAL_PATH = r"C:\Jimotec\Kund pdf\Klara_Beredningar"
-REGISTER_PATH = REMOTE_PATH if os.path.exists(REMOTE_PATH) else LOCAL_PATH
+# Sökväg till artikelregistret direkt på Y:
+REGISTER_PATH = r"Y:\Artikelregister"
 
 # Logotyp och sidomeny
 logo_file = None

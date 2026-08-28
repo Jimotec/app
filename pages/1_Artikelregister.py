@@ -53,9 +53,18 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-REGISTER_PATH = r"Y:\Artikelregister"
+# Sökvägslogik: Server (Y:) i första hand, annars Lokal (C:)
+SERVER_PATH = r"Y:\Artikelregister"
+LOCAL_PATH = r"C:\Jimotec\Kund pdf\Klara_Beredningar"
 
-# Meny & Logga
+if os.path.exists(SERVER_PATH):
+    REGISTER_PATH = SERVER_PATH
+elif os.path.exists(LOCAL_PATH):
+    REGISTER_PATH = LOCAL_PATH
+else:
+    REGISTER_PATH = SERVER_PATH
+
+# Logotyp och sidomeny
 logo_file = None
 for f in ["jimotec.jpg", "Jimotec.jpg", "jimotec.png", "Jimotec.png"]:
     if os.path.exists(f):
@@ -82,7 +91,7 @@ with st.sidebar.expander("Jimotec", expanded=True):
 with st.sidebar.expander("Mötesprotokoll", expanded=False):
     try_page_link("pages/6_motesprotokoll.py", "Mötesprotokoll")
 
-# Header
+# Toppsektion & Drive-knappar
 col_head, col_drives = st.columns([1.2, 2.8])
 with col_head:
     st.title("📦 Artikelregister")
@@ -150,20 +159,19 @@ if os.path.exists(REGISTER_PATH):
             if os.path.isdir(full_item_path):
                 txt_path = os.path.join(full_item_path, "Underlag_Beredning.txt")
                 info = parse_underlag(txt_path)
-                if not info["Artnr"]:
-                    info["Artnr"] = item
+                art_visning = info["Artnr"] if info["Artnr"] else item
                 artiklar.append({
                     "mappnamn": item,
-                    "artnr": info["Artnr"],
+                    "artnr": art_visning,
                     "benamning": info["Benämning"],
                     "ritningsnr": info["Ritningsnr"],
                     "material": info["Material"],
                     "revision": info["Revision"]
                 })
     except Exception as e:
-        st.error(f"Fel vid inläsning av mapp: {e}")
+        st.error(f"Fel vid inläsning av register: {e}")
 else:
-    st.error(f"Sökvägen `{REGISTER_PATH}` hittades inte. Kontrollera att RaiDrive är ansluten.")
+    st.error(f"Kunde varken hitta `{SERVER_PATH}` eller `{LOCAL_PATH}`.")
 
 col_sok, col_antal = st.columns([4, 1])
 with col_sok:
@@ -171,7 +179,6 @@ with col_sok:
 with col_antal:
     st.metric("Totalt antal artiklar", len(artiklar))
 
-# Filtrering
 if sok_text.strip():
     q = sok_text.strip().lower()
     filtrerade = [
@@ -187,7 +194,7 @@ else:
 
 st.caption(f"Visar {len(filtrerade)} st artiklar")
 
-# Tabell-header
+# Tabellhuvud
 col1, col2, col3, col4, col5, col6 = st.columns([2, 3, 2, 2.5, 1, 1.5])
 col1.markdown("**Artikelnummer**")
 col2.markdown("**Benämning**")
